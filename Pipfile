@@ -1,0 +1,14 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"
+
+[packages.high_order_layers_torch]
+git = "git://github.com/jloveric/high-order-layers-torch"
+editable = true
+ref = "master"
