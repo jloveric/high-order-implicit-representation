@@ -8,7 +8,9 @@ name = "pypi"
 [requires]
 python_version = "3.8"
 
-[packages.high_order_layers_torch]
-git = "git://github.com/jloveric/high-order-layers-torch"
-editable = true
-ref = "master"
+[packages]
+high_order_layers_torch = {editable = true, git = "git://github.com/jloveric/high-order-layers-torch", ref = "master"}
+hydra = "*"
+torch = "*"
+pillow = "*"
+matplotlib = "*"

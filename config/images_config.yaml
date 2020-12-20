@@ -1,0 +1,18 @@
+images : [""]
+mlp :
+  type : "polynomial"
+  n : 2
+  periodicity : null
+  rescale_output : False
+  scale : 2.0
+  input :
+    segments : 1
+    width : 2
+  output :
+    segments : 1
+    width : 3
+  hidden :
+    segments : 1
+    layers : 10
+    width : 10
+  
