@@ -17,7 +17,8 @@ class HighOrderMLP(nn.Module):
         hidden_layers: int,
         hidden_width: int,
         scale: float = 2.0,
-        rescale_output: bool = False
+        rescale_output: bool = False,
+        periodicity: float=None
     ) -> None:
         super().__init__()
         layer_list = []
@@ -27,11 +28,12 @@ class HighOrderMLP(nn.Module):
         for i in range(hidden_layers):
             hidden_layer = high_order_fc_layers(layer_type=layer_type, n=n, in_features=hidden_width, out_features=hidden_width,
                                                 segments=hidden_segments, rescale_output=rescale_output, scale=scale, periodicity=periodicity)
-            layer_list.append(hidden_layers)
+            layer_list.append(hidden_layer)
 
         output_layer = high_order_fc_layers(layer_type=layer_type, n=n, in_features=hidden_width, out_features=out_width,
                                             segments=out_segments, rescale_output=rescale_output, scale=scale, periodicity=periodicity)
         layer_list.append(output_layer)
+        print('layer_list', layer_list)
         self.model = nn.Sequential(*layer_list)
 
     def forward(self, x: Tensor) -> Tensor:

@@ -17,18 +17,26 @@ def image_to_dataset(filename: str):
     img = image.imread(filename)
 
     torch_image = torch.from_numpy(np.array(img))
+    max_size = max(torch_image.shape[0], torch_image.shape[1])
+
     xv, yv = torch.meshgrid(
         [torch.arange(torch_image.shape[0]), torch.arange(torch_image.shape[1])])
+
+    # rescale so the maximum values is between -1 and 1
+    xv = (xv/max_size)*2-1
+    yv = (yv/max_size)*2-1
+
     xv = xv.reshape(xv.shape[0], xv.shape[1], 1)
     yv = yv.reshape(yv.shape[0], yv.shape[1], 1)
 
     torch_position = torch.cat([xv, yv], dim=2)
     torch_position = torch_position.reshape(-1, 2)
 
-    torch_image_flat = torch_image.reshape(-1, 3)
+    torch_image_flat = torch_image.reshape(-1, 3)*2.0/255.0-1
+    print('torch_max', torch.max(torch_image_flat))
 
     return torch_image_flat, torch_position, torch_image
 
 
 if __name__ == "__main__":
-    image_to_dataset("images/newt.jpg")
+    image_to_dataset(filename="images/newt.jpg")

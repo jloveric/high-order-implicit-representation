@@ -1,3 +1,5 @@
+from typing import List
+
 from pytorch_lightning.metrics import Metric
 import os
 from omegaconf import DictConfig, OmegaConf
@@ -13,66 +15,91 @@ import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 from torchvision import datasets, transforms
 import torch
-from .high_order_mlp import HighOrderMLP
+from high_order_mlp import HighOrderMLP
+from single_image_dataset import image_to_dataset
+from torch.utils.data import DataLoader, Dataset
 
-transform = transforms.Compose(
-    [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-dataset = datasets.ImageFolder('images', transform=transform)
+class ImageDataset(Dataset):
+    def __init__(self, filenames: List[str]):
+        #super().__init__()
+        self.output, self.input, self.image = image_to_dataset(
+            filenames[0])
+
+        """
+        x = (2.0*torch.rand(1000)-1.0).view(-1, 1)
+        y = (2.0*torch.rand(1000)-1.0).view(-1, 1)
+        z = torch.where(x*y > 0, -0.5+0*x, 0.5+0*x)
+
+        self.data = torch.cat([x, y], dim=1)
+        self.z = z
+        print(self.data.shape)
+
+        self.transform = transform
+        """
+
+    def __len__(self):
+        return len(self.output)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        return self.input[idx], self.output[idx]
+
 
 class Net(LightningModule):
     def __init__(self, cfg: DictConfig):
         super().__init__()
         self.cfg = cfg
         self.model = HighOrderMLP(
-            layer_type=cfg.layer_type,
-            n=cfg.n,
-            in_width=cfg.input.width,
-            in_segments=cfg.input.segments,
-            out_width=cfg.output.width,
-            out_segment=cfg.output.segments,
-            hidden_width=cfg.hidden.width,
-            hidden_layers=cfg.hidden.layers,
-            hidden_segments=cfg.hidden.segments,
+            layer_type=cfg.mlp.layer_type,
+            n=cfg.mlp.n,
+            in_width=cfg.mlp.input.width,
+            in_segments=cfg.mlp.input.segments,
+            out_width=cfg.mlp.output.width,
+            out_segments=cfg.mlp.output.segments,
+            hidden_width=cfg.mlp.hidden.width,
+            hidden_layers=cfg.mlp.hidden.layers,
+            hidden_segments=cfg.mlp.hidden.segments,
         )
+        self.root_dir = f"{hydra.utils.get_original_cwd()}"
+        self.loss = nn.MSELoss()
 
     def forward(self, x):
         return self.model(x)
 
     def setup(self, stage):
-        num_train = int(self._train_fraction*40000)
-        num_val = 10000
-        num_extra = 40000-num_train
 
-        train = torchvision.datasets.CIFAR100(
-            root=self._data_dir, train=True, download=True, transform=transform)
-
-        self._train_subset, self._val_subset, extra = torch.utils.data.random_split(
-            train, [num_train, 10000, num_extra], generator=torch.Generator().manual_seed(1))
+        full_path = [f"{self.root_dir}/{path}" for path in self.cfg.images]
+        #print('full_path', full_path)    
+        self.train_dataset = ImageDataset(filenames=full_path)
+        self.test_dataset = ImageDataset(filenames=full_path)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
+        #print('x',x,'y',y)
         y_hat = self(x)
 
-        loss = F.cross_entropy(y_hat, y)
+        loss = self.loss(y_hat, y)
 
         self.log(f'train_loss', loss, prog_bar=True)
-        self.log(f'train_acc', acc, prog_bar=True)
+        #self.log(f'train_acc', acc, prog_bar=True)
 
         return loss
 
     def train_dataloader(self):
         trainloader = torch.utils.data.DataLoader(
-            self._train_subset, batch_size=self._batch_size, shuffle=True, num_workers=10)
+            self.train_dataset, batch_size=self.cfg.batch_size, shuffle=True, num_workers=10)
         return trainloader
 
     def test_dataloader(self):
-        testset = torchvision.datasets.CIFAR100(
-            root=self._data_dir, train=False, download=True, transform=transform)
+
         testloader = torch.utils.data.DataLoader(
-            testset, batch_size=4, shuffle=False, num_workers=10)
+            self.test_dataset, batch_size=self.cfg.batch_size, shuffle=False, num_workers=10)
         return testloader
 
+    """
     def eval_step(self, batch, batch_idx, name):
         x, y = batch
         logits = self(x)
@@ -88,9 +115,10 @@ class Net(LightningModule):
         self.log(f'{name}_acc', acc, prog_bar=True)
         self.log(f'{name}_acc5', val, prog_bar=True)
         return loss
+    """
 
     def configure_optimizers(self):
-        return optim.Adam(self.parameters(), lr=self._lr)
+        return optim.Adam(self.parameters(), lr=self.cfg.lr)
 
 
 @hydra.main(config_name="./config/images_config")
