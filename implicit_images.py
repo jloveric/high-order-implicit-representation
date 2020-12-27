@@ -22,7 +22,7 @@ from torch.utils.data import DataLoader, Dataset
 
 class ImageDataset(Dataset):
     def __init__(self, filenames: List[str]):
-        #super().__init__()
+        # super().__init__()
         self.output, self.input, self.image = image_to_dataset(
             filenames[0])
 
@@ -51,6 +51,7 @@ class ImageDataset(Dataset):
 class Net(LightningModule):
     def __init__(self, cfg: DictConfig):
         super().__init__()
+        self.save_hyperparameters(cfg)
         self.cfg = cfg
         self.model = HighOrderMLP(
             layer_type=cfg.mlp.layer_type,
@@ -65,7 +66,6 @@ class Net(LightningModule):
         )
         self.root_dir = f"{hydra.utils.get_original_cwd()}"
         self.loss = nn.MSELoss()
-        
 
     def forward(self, x):
         return self.model(x)
@@ -73,13 +73,13 @@ class Net(LightningModule):
     def setup(self, stage):
 
         full_path = [f"{self.root_dir}/{path}" for path in self.cfg.images]
-        #print('full_path', full_path)    
+        #print('full_path', full_path)
         self.train_dataset = ImageDataset(filenames=full_path)
         self.test_dataset = ImageDataset(filenames=full_path)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        #print('x',x,'y',y)
+        # print('x',x,'y',y)
         y_hat = self(x)
 
         loss = self.loss(y_hat, y)
@@ -106,28 +106,44 @@ class Net(LightningModule):
 
 @hydra.main(config_name="./config/images_config")
 def run_implicit_images(cfg: DictConfig):
-
+    # TODO use a space filling curve to map x,y linear coordinates
+    # to space filling coordinates 1d coordinate.
     print(OmegaConf.to_yaml(cfg))
     print("Working directory : {}".format(os.getcwd()))
     print(f"Orig working directory    : {hydra.utils.get_original_cwd()}")
 
-    if cfg.train is True :
+    if cfg.train is True:
         trainer = Trainer(max_epochs=cfg.max_epochs, gpus=cfg.gpus)
         model = Net(cfg)
         trainer.fit(model)
         print('testing')
         trainer.test(model)
         print('finished testing')
-    else :
+    else:
         # plot some data
         print('evaluating result')
-        model = Net.load_from_checkpoint(cfg.checkpoint)
+        print('cfg.checkpoint', cfg.checkpoint)
+        checkpoint_path = f"{hydra.utils.get_original_cwd()}/{cfg.checkpoint}"
+        print('checkpoint_path', checkpoint_path)
+        model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
-        output, inputs, image = image_to_dataset(cfg.images[0])
+        image_dir = f"{hydra.utils.get_original_cwd()}/{cfg.images[0]}"
+        output, inputs, image = image_to_dataset(image_dir)
         y_hat = model(inputs)
-        max_x = torch.max(inputs,dim=0)
-        max_y = torch.max(inputs,dim=1)
+        max_x = torch.max(inputs, dim=0)
+        max_y = torch.max(inputs, dim=1)
         print('x_max', max_x, 'y_max', max_y)
+        print('y_hat.shape', y_hat.shape)
+        print('image.shape', image.shape)
+        ans = y_hat.reshape(image.shape[0], image.shape[1], image.shape[2])
+        ans = (ans+1.0)/2.0
+        f, axarr = plt.subplots(1, 2)
+        axarr[0].imshow(ans.detach().numpy())
+        axarr[0].set_title('fit')
+        axarr[1].imshow(image)
+        axarr[1].set_title('original')
+        plt.show()
+
 
 if __name__ == "__main__":
     run_implicit_images()

@@ -9,7 +9,6 @@ name = "pypi"
 python_version = "3"
 
 [packages]
-high_order_layers_torch = {editable = true, git = "git://github.com/jloveric/high-order-layers-torch", ref = "master"}
 hydra = "*"
 torch = "*"
 pillow = "*"
@@ -18,3 +17,9 @@ scikit-image = "*"
 pytorch-lightning = "*"
 hydra-core = "*"
 torchvision = "*"
+hilbertcurve = "*"
+
+[packages.high_order_layers_torch]
+editable = true
+git = "git://github.com/jloveric/high-order-layers-torch"
+ref = "master"
