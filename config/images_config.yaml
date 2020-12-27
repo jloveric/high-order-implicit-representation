@@ -3,7 +3,7 @@ images :
   - "images/jupiter.jpg"
 mlp :
   layer_type : "polynomial"
-  n : 2
+  n : 3
   periodicity : null
   rescale_output : False
   scale : 2.0
@@ -19,6 +19,10 @@ mlp :
     width : 10
 
 max_epochs: 100
-gpus: 0
+gpus: 1
 lr: 1e-3
 batch_size: 32
+
+# Are you training? Otherwise plot the result
+train: True
+checkpoint: null

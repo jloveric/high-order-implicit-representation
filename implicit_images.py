@@ -65,6 +65,7 @@ class Net(LightningModule):
         )
         self.root_dir = f"{hydra.utils.get_original_cwd()}"
         self.loss = nn.MSELoss()
+        
 
     def forward(self, x):
         return self.model(x)
@@ -99,41 +100,34 @@ class Net(LightningModule):
             self.test_dataset, batch_size=self.cfg.batch_size, shuffle=False, num_workers=10)
         return testloader
 
-    """
-    def eval_step(self, batch, batch_idx, name):
-        x, y = batch
-        logits = self(x)
-        loss = F.cross_entropy(logits, y)
-        preds = torch.argmax(logits, dim=1)
-        acc = accuracy(preds, y)
-
-        val = self._topk_metric(logits, y)
-        val = self._topk_metric.compute()
-
-        # Calling self.log will surface up scalars for you in TensorBoard
-        self.log(f'{name}_loss', loss, prog_bar=True)
-        self.log(f'{name}_acc', acc, prog_bar=True)
-        self.log(f'{name}_acc5', val, prog_bar=True)
-        return loss
-    """
-
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=self.cfg.lr)
 
 
 @hydra.main(config_name="./config/images_config")
 def run_implicit_images(cfg: DictConfig):
+
     print(OmegaConf.to_yaml(cfg))
     print("Working directory : {}".format(os.getcwd()))
     print(f"Orig working directory    : {hydra.utils.get_original_cwd()}")
 
-    trainer = Trainer(max_epochs=cfg.max_epochs, gpus=cfg.gpus)
-    model = Net(cfg)
-    trainer.fit(model)
-    print('testing')
-    trainer.test(model)
-    print('finished testing')
-
+    if cfg.train is True :
+        trainer = Trainer(max_epochs=cfg.max_epochs, gpus=cfg.gpus)
+        model = Net(cfg)
+        trainer.fit(model)
+        print('testing')
+        trainer.test(model)
+        print('finished testing')
+    else :
+        # plot some data
+        print('evaluating result')
+        model = Net.load_from_checkpoint(cfg.checkpoint)
+        model.eval()
+        output, inputs, image = image_to_dataset(cfg.images[0])
+        y_hat = model(inputs)
+        max_x = torch.max(inputs,dim=0)
+        max_y = torch.max(inputs,dim=1)
+        print('x_max', max_x, 'y_max', max_y)
 
 if __name__ == "__main__":
     run_implicit_images()
