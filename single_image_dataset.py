@@ -51,7 +51,22 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
         torch_position = torch.cat([xv, yv], dim=2)
         torch_position = torch_position.reshape(-1, 2)
     else:
-        raise(f"Rotation {rotations} not implemented.")
+        line_list = []
+        for i in range(rotations):
+            theta = (math.pi/2.0)*(i/rotations)
+            print('theta', theta)
+            rot_x = math.cos(theta)
+            rot_y = math.sin(theta)
+            rot_sum = math.fabs(rot_x)+math.fabs(rot_y)
+
+            # Add the line and the line orthogonal
+            line_list.append((rot_x*xv+rot_y*yv)/rot_sum)
+            line_list.append((rot_x*xv-rot_y*yv)/rot_sum)
+
+        torch_position = torch.cat(line_list, dim=2)
+        torch_position = torch_position.reshape(-1, 2*rotations)
+
+        #raise(f"Rotation {rotations} not implemented.")
 
     torch_image_flat = torch_image.reshape(-1, 3)*2.0/255.0-1
     print('torch_max', torch.max(torch_image_flat))
