@@ -13,13 +13,13 @@ python implicit_images.py train=False checkpoint=outputs/2020-12-26/15-42-25/lig
 ```
 ## Examples
 The example below uses piecewise polynomials.  The input layer is the x, y position where there are 100 segments
-for each input connection.  There are 2 hidden layers with 20 units each and 2 segments.  There are 3 outputs representing the RGB colors, where each output has 2 segment.  In total there are 12.3k parameters,
+for each input connection.  There are 2 hidden layers with 20 units each and 2 segments.  There are 3 outputs representing the RGB colors, where each output has 2 segment.  In total there are 18.4k parameters,
 The raw image can be represented by 2.232e6 8bit parameters.
 ```python
-python implicit_images.py mlp.hidden.width=20 mlp.hidden.layers=2 lr=1e-3 mlp.n=3 mlp.periodicity=2.0 mlp.layer_type=continuous mlp.hidden.segments=2 mlp.input.segments=100 mlp.output.segments=2 batch_size=256
+python implicit_images.py mlp.hidden.width=20 mlp.hidden.layers=1 lr=1e-3 mlp.n=3 mlp.periodicity=2.0 mlp.layer_type=continuous mlp.hidden.segments=2 mlp.input.segments=100 mlp.output.segments=2 batch_size=256 rotations=2
 ```
 
-![Simple network](results/100x20x2hidden.png)
+![Simple network](results/100x20x1hidden.png)
 
 ### with rotations
 ```python
