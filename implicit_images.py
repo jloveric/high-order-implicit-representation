@@ -21,10 +21,10 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class ImageDataset(Dataset):
-    def __init__(self, filenames: List[str]):
+    def __init__(self, filenames: List[str], rotations: int = 1):
         # super().__init__()
         self.output, self.input, self.image = image_to_dataset(
-            filenames[0])
+            filenames[0], rotations=rotations)
 
         """
         x = (2.0*torch.rand(1000)-1.0).view(-1, 1)
@@ -74,8 +74,10 @@ class Net(LightningModule):
 
         full_path = [f"{self.root_dir}/{path}" for path in self.cfg.images]
         #print('full_path', full_path)
-        self.train_dataset = ImageDataset(filenames=full_path)
-        self.test_dataset = ImageDataset(filenames=full_path)
+        self.train_dataset = ImageDataset(
+            filenames=full_path, rotations=self.cfg.rotations)
+        self.test_dataset = ImageDataset(
+            filenames=full_path, rotations=self.cfg.rotations)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -128,7 +130,7 @@ def run_implicit_images(cfg: DictConfig):
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
         image_dir = f"{hydra.utils.get_original_cwd()}/{cfg.images[0]}"
-        output, inputs, image = image_to_dataset(image_dir)
+        output, inputs, image = image_to_dataset(image_dir, rotations=cfg.rotations)
         y_hat = model(inputs)
         max_x = torch.max(inputs, dim=0)
         max_y = torch.max(inputs, dim=1)
