@@ -56,6 +56,9 @@ class Net(LightningModule):
         self.model = HighOrderMLP(
             layer_type=cfg.mlp.layer_type,
             n=cfg.mlp.n,
+            n_in=cfg.mlp.n_in,
+            n_hidden=cfg.mlp.n_in,
+            n_out=cfg.mlp.n_out,
             in_width=cfg.mlp.input.width,
             in_segments=cfg.mlp.input.segments,
             out_width=cfg.mlp.output.width,
@@ -130,7 +133,8 @@ def run_implicit_images(cfg: DictConfig):
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
         image_dir = f"{hydra.utils.get_original_cwd()}/{cfg.images[0]}"
-        output, inputs, image = image_to_dataset(image_dir, rotations=cfg.rotations)
+        output, inputs, image = image_to_dataset(
+            image_dir, rotations=cfg.rotations)
         y_hat = model(inputs)
         max_x = torch.max(inputs, dim=0)
         max_y = torch.max(inputs, dim=1)

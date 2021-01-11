@@ -18,5 +18,12 @@ The raw image can be represented by 2.232e6 8bit parameters.
 ```python
 python implicit_images.py -m mlp.hidden.width=40 mlp.hidden.layers=1 lr=1e-3 mlp.n=3 mlp.periodicity=2.0 mlp.layer_type=continuous mlp.hidden.segments=2 mlp.input.segments=100 mlp.output.segments=2 batch_size=256 mlp.input.width=4 rotations=2
 ```
-
 ![Simple network](results/100x40x1hidden.png)
+similarly with a fourier series network
+```python
+python implicit_images.py -m mlp.hidden.width=40 mlp.hidden.layers=1 lr=1e-3 mlp.n=3 mlp.n_in=31 mlp.layer_type=fourier batch_size=256 mlp.input.width=4 rotations=2
+```
+and discontinuous polynomial
+```python
+python implicit_images.py -m mlp.hidden.width=40 mlp.hidden.layers=1 lr=1e-3 mlp.n=3 mlp.periodicity=2.0 mlp.layer_type=discontinuous mlp.hidden.segments=2 mlp.input.segments=100 mlp.output.segments=2 batch_size=256 mlp.input.width=4 rotations=2
+```
