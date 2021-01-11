@@ -15,9 +15,10 @@ import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 from torchvision import datasets, transforms
 import torch
-from high_order_mlp import HighOrderMLP
+#from high_order_mlp import HighOrderMLP
 from single_image_dataset import image_to_dataset
 from torch.utils.data import DataLoader, Dataset
+from high_order_layers_torch.networks import *
 
 
 class ImageDataset(Dataset):
