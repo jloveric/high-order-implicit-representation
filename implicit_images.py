@@ -124,6 +124,7 @@ def run_implicit_images(cfg: DictConfig):
         print('testing')
         trainer.test(model)
         print('finished testing')
+        print('best check_point', trainer.checkpoint_callback.best_model_path)
     else:
         # plot some data
         print('evaluating result')
