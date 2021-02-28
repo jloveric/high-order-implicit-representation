@@ -1,0 +1,31 @@
+images :
+  - "images/newt.jpg"
+  - "images/jupiter.jpg"
+mlp :
+  layer_type : "polynomial"
+  n : 3
+  n_in : null
+  n_out : null
+  n_hidden : null
+  periodicity : null
+  rescale_output : False
+  scale : 2.0
+  input :
+    segments : 1
+    width : 27
+  output :
+    segments : 1
+    width : 48
+  hidden :
+    segments : 1
+    layers : 2
+    width : 10
+
+max_epochs: 50
+gpus: 1
+lr: 1e-3
+batch_size: 256
+
+# Are you training? Otherwise plot the result
+train: True
+checkpoint: null

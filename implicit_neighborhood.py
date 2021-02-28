@@ -16,15 +16,16 @@ import torchvision.transforms as transforms
 from torchvision import datasets, transforms
 import torch
 #from high_order_mlp import HighOrderMLP
-from single_image_dataset import image_to_dataset
+from single_image_dataset import image_neighborhood_dataset
 from torch.utils.data import DataLoader, Dataset
+from high_order_layers_torch.networks import *
 
 
-class ImageDataset(Dataset):
+class ImageNeighborhoodDataset(Dataset):
     def __init__(self, filenames: List[str], rotations: int = 1):
         # super().__init__()
-        self.output, self.input, self.image = image_to_dataset(
-            filenames[0], rotations=rotations)
+        self.input, self.output, self.image = image_neighborhood_dataset(
+            filenames[0], width=3, outside=1)
 
         """
         x = (2.0*torch.rand(1000)-1.0).view(-1, 1)
@@ -77,9 +78,9 @@ class Net(LightningModule):
 
         full_path = [f"{self.root_dir}/{path}" for path in self.cfg.images]
         #print('full_path', full_path)
-        self.train_dataset = ImageDataset(
+        self.train_dataset = ImageNeighborhoodDataset(
             filenames=full_path, rotations=self.cfg.rotations)
-        self.test_dataset = ImageDataset(
+        self.test_dataset = ImageNeighborhoodDataset(
             filenames=full_path, rotations=self.cfg.rotations)
 
     def training_step(self, batch, batch_idx):
@@ -109,7 +110,7 @@ class Net(LightningModule):
         return optim.Adam(self.parameters(), lr=self.cfg.lr)
 
 
-@hydra.main(config_name="./config/images_config")
+@hydra.main(config_name="./config/neighborhood_config")
 def run_implicit_images(cfg: DictConfig):
     # TODO use a space filling curve to map x,y linear coordinates
     # to space filling coordinates 1d coordinate.

@@ -9,7 +9,8 @@ import math
 def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     """
     Read in an image file and return the flattened position input
-    flattened output and torch array of the original image.
+    flattened output and torch array of the original image.def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
+
     Args :
         filename : image filename.
     Returns :
@@ -74,5 +75,51 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     return torch_image_flat, torch_position, torch_image
 
 
+def image_neighborhood_dataset(filename: str, width=3, outside=1):
+    """
+    Args :
+        filename : Name of image file to create data from.
+        width: width of the inner block.
+        outside : width of the outer neighborhood surrounding the inner block.
+    Return :
+        tensor of inner block, tensor of neighborhood
+    """
+    img = image.imread(filename)
+
+    torch_image = torch.from_numpy(np.array(img))
+    print('image.shape', torch_image.shape)
+    px = torch_image.shape[0]
+    py = torch_image.shape[1]
+
+    patch_edge = []
+    patch_block = []
+
+    lastx = px-width+2*outside
+    lasty = py-width+2*outside
+
+    for i in range(lastx):
+        for j in range(lasty):
+            patch = torch_image[(i+outside):(i+outside+width),
+                          (j+outside):(j+outside+width), :]
+            patch = patch.flatten()
+            patch_block.append(patch)
+
+            top = torch_image[i:(i+width+2*outside), j:(j+outside), :].flatten()
+            bottom = torch_image[i:(i+width+2*outside),
+                           (j+width+outside):(j+width+2*outside), :].flatten()
+            left = torch_image[i:(i+outside), (j+outside)
+                            :(j+outside+width), :].flatten()
+            right = torch_image[(i+width+outside):(i+width+2*outside),
+                          (j+outside):(j+width+outside)].flatten()
+            edge = torch.cat((top, bottom, left, right)).flatten()
+
+            patch_edge.append(edge)
+
+    print(patch_edge[0].shape, patch_block[0].shape)
+    print('len(patch_edge)', len(patch_edge), len(patch_block))
+    return patch_block, patch_edge, torch_image
+
+
 if __name__ == "__main__":
-    image_to_dataset(filename="images/newt.jpg")
+    #image_to_dataset(filename="images/newt.jpg")
+    image_neighborhood_dataset(filename="images/newt.jpg")
