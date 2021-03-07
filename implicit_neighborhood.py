@@ -32,7 +32,7 @@ class ImageNeighborhoodDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        print('self.input[idx]',self.input[idx].shape, self.output[idx].shape)
+
         return self.input[idx], self.output[idx]
 
 
@@ -72,9 +72,7 @@ class Net(LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        print('x.shape', x.shape, 'y.shape', y.shape)
         y_hat = self(x)
-        print('y_hat.shape', y_hat.shape)
         loss = self.loss(y_hat, y)
 
         self.log(f'train_loss', loss, prog_bar=True)

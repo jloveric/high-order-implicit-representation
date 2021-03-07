@@ -118,10 +118,10 @@ def image_neighborhood_dataset(filename: str, width=3, outside=1):
             patch_edge.append(edge)
             patch_block.append(patch)
 
-    patch_block = torch.stack(patch_block)
-    patch_edge = torch.stack(patch_edge)
+    patch_block = (2.0/256.0)*torch.stack(patch_block)-1
+    patch_edge = (2.0/256.0)*torch.stack(patch_edge)-1
 
-    print(patch_edge[0].shape, patch_block[0].shape)
+    print(patch_block, patch_edge)
     return patch_block, patch_edge, torch_image
 
 
