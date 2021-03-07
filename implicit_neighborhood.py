@@ -22,22 +22,9 @@ from high_order_layers_torch.networks import *
 
 
 class ImageNeighborhoodDataset(Dataset):
-    def __init__(self, filenames: List[str], rotations: int = 1):
-        # super().__init__()
+    def __init__(self, filenames: List[str]):
         self.input, self.output, self.image = image_neighborhood_dataset(
             filenames[0], width=3, outside=1)
-
-        """
-        x = (2.0*torch.rand(1000)-1.0).view(-1, 1)
-        y = (2.0*torch.rand(1000)-1.0).view(-1, 1)
-        z = torch.where(x*y > 0, -0.5+0*x, 0.5+0*x)
-
-        self.data = torch.cat([x, y], dim=1)
-        self.z = z
-        print(self.data.shape)
-
-        self.transform = transform
-        """
 
     def __len__(self):
         return len(self.output)
@@ -45,7 +32,7 @@ class ImageNeighborhoodDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-
+        print('self.input[idx]',self.input[idx].shape, self.output[idx].shape)
         return self.input[idx], self.output[idx]
 
 
@@ -79,15 +66,15 @@ class Net(LightningModule):
         full_path = [f"{self.root_dir}/{path}" for path in self.cfg.images]
         #print('full_path', full_path)
         self.train_dataset = ImageNeighborhoodDataset(
-            filenames=full_path, rotations=self.cfg.rotations)
+            filenames=full_path)
         self.test_dataset = ImageNeighborhoodDataset(
-            filenames=full_path, rotations=self.cfg.rotations)
+            filenames=full_path)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        # print('x',x,'y',y)
+        print('x.shape', x.shape, 'y.shape', y.shape)
         y_hat = self(x)
-
+        print('y_hat.shape', y_hat.shape)
         loss = self.loss(y_hat, y)
 
         self.log(f'train_loss', loss, prog_bar=True)
@@ -111,7 +98,7 @@ class Net(LightningModule):
 
 
 @hydra.main(config_name="./config/neighborhood_config")
-def run_implicit_images(cfg: DictConfig):
+def run_implicit_neighborhood(cfg: DictConfig):
     # TODO use a space filling curve to map x,y linear coordinates
     # to space filling coordinates 1d coordinate.
     print(OmegaConf.to_yaml(cfg))
@@ -154,4 +141,4 @@ def run_implicit_images(cfg: DictConfig):
 
 
 if __name__ == "__main__":
-    run_implicit_images()
+    run_implicit_neighborhood()

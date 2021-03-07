@@ -6,6 +6,7 @@ from omegaconf import DictConfig, OmegaConf
 import hydra
 from pytorch_lightning.metrics.functional import accuracy
 from high_order_layers_torch.layers import *
+from high_order_layers_torch.networks import *
 from pytorch_lightning import LightningModule, Trainer
 import torch.optim as optim
 import torch.nn.functional as F

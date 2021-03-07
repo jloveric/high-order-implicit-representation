@@ -87,39 +87,44 @@ def image_neighborhood_dataset(filename: str, width=3, outside=1):
     img = image.imread(filename)
 
     torch_image = torch.from_numpy(np.array(img))
-    print('image.shape', torch_image.shape)
+
     px = torch_image.shape[0]
     py = torch_image.shape[1]
 
     patch_edge = []
     patch_block = []
 
-    lastx = px-width+2*outside
-    lasty = py-width+2*outside
+    lastx = px-(width+2*outside)
+    lasty = py-(width+2*outside)
+
+    totalx = width+2*outside
+    totaly = totalx
+
+    edge_mask = torch.ones(totalx, totaly, 3, dtype=bool)
+    edge_mask[outside:(outside+width), outside:(outside+width),:] = False
+    block_mask = ~edge_mask
+
+    edge_indexes = edge_mask.flatten()
+    block_indexes = block_mask.flatten()
 
     for i in range(lastx):
         for j in range(lasty):
-            patch = torch_image[(i+outside):(i+outside+width),
-                          (j+outside):(j+outside+width), :]
-            patch = patch.flatten()
-            patch_block.append(patch)
+            all_elements = torch_image[i:(i+totalx),
+                                       j:(j+totaly), :].flatten()
 
-            top = torch_image[i:(i+width+2*outside), j:(j+outside), :].flatten()
-            bottom = torch_image[i:(i+width+2*outside),
-                           (j+width+outside):(j+width+2*outside), :].flatten()
-            left = torch_image[i:(i+outside), (j+outside)
-                            :(j+outside+width), :].flatten()
-            right = torch_image[(i+width+outside):(i+width+2*outside),
-                          (j+outside):(j+width+outside)].flatten()
-            edge = torch.cat((top, bottom, left, right)).flatten()
+            patch = all_elements[block_indexes]
+            edge = all_elements[edge_indexes]
 
             patch_edge.append(edge)
+            patch_block.append(patch)
+
+    patch_block = torch.stack(patch_block)
+    patch_edge = torch.stack(patch_edge)
 
     print(patch_edge[0].shape, patch_block[0].shape)
-    print('len(patch_edge)', len(patch_edge), len(patch_block))
     return patch_block, patch_edge, torch_image
 
 
 if __name__ == "__main__":
-    #image_to_dataset(filename="images/newt.jpg")
+    # image_to_dataset(filename="images/newt.jpg")
     image_neighborhood_dataset(filename="images/newt.jpg")

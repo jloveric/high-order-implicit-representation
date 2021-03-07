@@ -7,7 +7,7 @@ mlp :
   n_in : null
   n_out : null
   n_hidden : null
-  periodicity : null
+  periodicity : 2.0
   rescale_output : False
   scale : 2.0
   input :
