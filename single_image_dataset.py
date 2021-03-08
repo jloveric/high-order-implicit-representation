@@ -75,56 +75,80 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     return torch_image_flat, torch_position, torch_image
 
 
-def image_neighborhood_dataset(filename: str, width=3, outside=1):
-    """
-    Args :
-        filename : Name of image file to create data from.
-        width: width of the inner block.
-        outside : width of the outer neighborhood surrounding the inner block.
-    Return :
-        tensor of inner block, tensor of neighborhood
-    """
-    img = image.imread(filename)
+class ImageNeighborhoodReader:
+    def __init__(self, filename: str, width=3, outside=1):
+        self._input, self._output, self._image = self.image_neighborhood_dataset(
+            filename=filename, width=width, outside=outside)
 
-    torch_image = torch.from_numpy(np.array(img))
+    @property
+    def features(self):
+        return self._input
 
-    px = torch_image.shape[0]
-    py = torch_image.shape[1]
+    @property
+    def targets(self):
+        return self._output
 
-    patch_edge = []
-    patch_block = []
+    @property
+    def lastx(self):
+        return self._lastx
 
-    lastx = px-(width+2*outside)
-    lasty = py-(width+2*outside)
+    @property
+    def lasty(self):
+        return self._lasty
 
-    totalx = width+2*outside
-    totaly = totalx
+    def image_neighborhood_dataset(self, filename: str, width=3, outside=1):
+        """
+        Args :
+            filename : Name of image file to create data from.
+            width: width of the inner block.
+            outside : width of the outer neighborhood surrounding the inner block.
+        Return :
+            tensor of inner block, tensor of neighborhood
+        """
+        print('filename', filename,flush=True)
+        img = image.imread(filename)
 
-    edge_mask = torch.ones(totalx, totaly, 3, dtype=bool)
-    edge_mask[outside:(outside+width), outside:(outside+width),:] = False
-    block_mask = ~edge_mask
+        torch_image = torch.from_numpy(np.array(img))
 
-    edge_indexes = edge_mask.flatten()
-    block_indexes = block_mask.flatten()
+        px = torch_image.shape[0]
+        py = torch_image.shape[1]
 
-    for i in range(lastx):
-        for j in range(lasty):
-            all_elements = torch_image[i:(i+totalx),
-                                       j:(j+totaly), :].flatten()
+        patch_edge = []
+        patch_block = []
 
-            patch = all_elements[block_indexes]
-            edge = all_elements[edge_indexes]
+        max_x = px-(width+2*outside)
+        max_y = py-(width+2*outside)
+        self._lastx = max_x
+        self._lasty = max_y
 
-            patch_edge.append(edge)
-            patch_block.append(patch)
+        totalx = width+2*outside
+        totaly = totalx
 
-    patch_block = (2.0/256.0)*torch.stack(patch_block)-1
-    patch_edge = (2.0/256.0)*torch.stack(patch_edge)-1
+        edge_mask = torch.ones(totalx, totaly, 3, dtype=bool)
+        edge_mask[outside:(outside+width), outside:(outside+width), :] = False
+        block_mask = ~edge_mask
 
-    print(patch_block, patch_edge)
-    return patch_block, patch_edge, torch_image
+        edge_indexes = edge_mask.flatten()
+        block_indexes = block_mask.flatten()
+
+        for i in range(max_x):
+            for j in range(max_y):
+                all_elements = torch_image[i:(i+totalx),
+                                           j:(j+totaly), :].flatten()
+
+                patch = all_elements[block_indexes]
+                edge = all_elements[edge_indexes]
+
+                patch_edge.append(edge)
+                patch_block.append(patch)
+
+        patch_block = (2.0/256.0)*torch.stack(patch_block)-1
+        patch_edge = (2.0/256.0)*torch.stack(patch_edge)-1
+
+        print(patch_block, patch_edge)
+        return patch_block, patch_edge, torch_image
 
 
 if __name__ == "__main__":
     # image_to_dataset(filename="images/newt.jpg")
-    image_neighborhood_dataset(filename="images/newt.jpg")
+    ind = ImageNeighborhoodReader(filename="images/newt.jpg")

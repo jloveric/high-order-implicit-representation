@@ -17,8 +17,8 @@ mlp :
     segments : 1
     width : 48
   hidden :
-    segments : 1
-    layers : 2
+    segments : 2
+    layers : 1
     width : 10
 
 max_epochs: 50

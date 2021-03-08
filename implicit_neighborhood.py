@@ -16,15 +16,18 @@ import torchvision.transforms as transforms
 from torchvision import datasets, transforms
 import torch
 #from high_order_mlp import HighOrderMLP
-from single_image_dataset import image_neighborhood_dataset
+from single_image_dataset import ImageNeighborhoodReader
 from torch.utils.data import DataLoader, Dataset
 from high_order_layers_torch.networks import *
 
 
 class ImageNeighborhoodDataset(Dataset):
-    def __init__(self, filenames: List[str]):
-        self.input, self.output, self.image = image_neighborhood_dataset(
-            filenames[0], width=3, outside=1)
+    def __init__(self, filenames: List[str], width: int = 3, outside: int = 1):
+        ind = ImageNeighborhoodReader(
+            filenames, width=width, outside=outside)
+        self.inputs = ind.features
+        self.output = ind.targets
+        self.image_neighborhood = ind
 
     def __len__(self):
         return len(self.output)
@@ -120,8 +123,12 @@ def run_implicit_neighborhood(cfg: DictConfig):
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
         image_dir = f"{hydra.utils.get_original_cwd()}/{cfg.images[0]}"
-        output, inputs, image = image_to_dataset(
-            image_dir, rotations=cfg.rotations)
+        # output, inputs, image = image_to_dataset(
+        #    image_dir, rotations=cfg.rotations)
+        print('image_dir',image_dir)
+        ind = ImageNeighborhoodDataset(image_dir, width=3, outside=1)
+        inputs = ind.inputs
+
         y_hat = model(inputs)
         max_x = torch.max(inputs, dim=0)
         max_y = torch.max(inputs, dim=1)
