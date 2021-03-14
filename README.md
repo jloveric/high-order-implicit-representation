@@ -42,3 +42,6 @@ create output with trained filter
 ```
 python implicit_neighborhood.py train=False checkpoint=<>
 ```
+Training on the image of the newt and applying to the image of jupiter gives
+the following results.
+![Piecewise Polynomial Newt to Jupiter.](results/salamander_to_jupiter.png)
