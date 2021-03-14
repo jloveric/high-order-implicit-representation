@@ -89,6 +89,10 @@ class ImageNeighborhoodReader:
         return self._output
 
     @property
+    def image(self) :
+        return self._image
+
+    @property
     def lastx(self):
         return self._lastx
 

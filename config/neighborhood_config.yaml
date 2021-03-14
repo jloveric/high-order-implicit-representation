@@ -1,6 +1,7 @@
 images :
   - "images/newt.jpg"
   - "images/jupiter.jpg"
+  - "images/mountains.jpg"
 mlp :
   layer_type : "polynomial"
   n : 3
