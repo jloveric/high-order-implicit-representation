@@ -1,3 +1,35 @@
+import torch
+from torch.utils.data import Dataset
+from typing import List
+
+
+class SingleTextDataset(Dataset):
+    def __init__(self, filenames: List[str], features: int = 10, targets: int = 10):
+        feature_list, target_list = dataset_from_file(
+            filenames[0], features=features, targets=targets)
+        self.inputs = feature_list
+        self.output = target_list
+        self.features = features
+        self.targets = targets
+
+    def __len__(self):
+        return len(self.output)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        return (self.input[idx]-128+0.5)/128.0, (self.output[idx]-128+0.5)/128.0
+
+
+def ascii_to_float(ascii_tensor: torch.Tensor):
+    return (ascii_tensor-128+0.5)/128
+
+
+def float_to_ascii(float_tensor: torch.Tensor):
+    return ((float_tensor+1.0)*128-0.5).int()
+
+
 def generate_dataset(text_in: str, features: int, targets: int):
 
     udata = text_in.decode("utf-8")
