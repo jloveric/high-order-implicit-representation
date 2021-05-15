@@ -19,7 +19,7 @@ class SingleTextDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        return (self.input[idx]-128+0.5)/128.0, (self.output[idx]-128+0.5)/128.0
+        return (self.inputs[idx]-128+0.5)/128.0, (self.output[idx]-128+0.5)/128.0
 
 
 def ascii_to_float(ascii_tensor: torch.Tensor):
@@ -32,19 +32,19 @@ def float_to_ascii(float_tensor: torch.Tensor):
 
 def generate_dataset(text_in: str, features: int, targets: int):
 
-    udata = text_in.decode("utf-8")
-    text = udata.encode("ascii", "ignore")
-
+    udata = text_in #text_in.decode("utf-8")
+    text = udata.encode("ascii", "ignore").decode('ascii')
+    print('text[1:100',text[1:100])
     final = len(text)-(targets+features)
     feature_list = []
     target_list = []
     for i in range(final):
-        nf = [ord(val) for val in text[i:(i+features)]]
-        feature_list.append(nf)
-        nt = [ord(val) for val in text[(i+features):(i+features+targets)]]
-        target_list.append(nt)
+        n_feature = [ord(val) for val in text[i:(i+features)]]
+        feature_list.append(n_feature)
+        n_target = [ord(val) for val in text[(i+features):(i+features+targets)]]
+        target_list.append(n_target)
 
-    return feature_list, target_list
+    return torch.tensor(feature_list), torch.tensor(target_list)
 
 
 def dataset_from_file(filename: str, features: int, targets: int):

@@ -1,4 +1,4 @@
-images :
+filenames :
   - "books/frankenstein.txt"
   - "books/the_raven.txt"
 mlp :
@@ -7,7 +7,7 @@ mlp :
   n_in : null
   n_out : null
   n_hidden : null
-  periodicity : null
+  periodicity : 2.0
   rescale_output : False
   scale : 2.0
   input :
@@ -19,7 +19,7 @@ mlp :
   hidden :
     segments : 1
     layers : 1
-    width : 10
+    width : 100
 
 max_epochs: 50
 gpus: 1

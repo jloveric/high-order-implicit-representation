@@ -19,7 +19,7 @@ import torch
 from single_image_dataset import ImageNeighborhoodReader
 from torch.utils.data import DataLoader, Dataset
 from high_order_layers_torch.networks import *
-from .single_text_dataset import SingleTextDataset
+from single_text_dataset import SingleTextDataset
 
 
 class Net(LightningModule):
