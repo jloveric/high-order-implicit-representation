@@ -51,3 +51,7 @@ Run with this command
 ```
 python language_interpolation.py 
 ```
+running with Nevergrad
+```
+python language_interpolation.py hydra/sweeper=nevergrad --cfg hydra -p hydra.sweeper
+```

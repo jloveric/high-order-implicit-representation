@@ -1,6 +1,5 @@
 from typing import List
 
-from pytorch_lightning.metrics import Metric
 import os
 from omegaconf import DictConfig, OmegaConf
 import hydra
@@ -8,16 +7,7 @@ from pytorch_lightning.metrics.functional import accuracy
 from high_order_layers_torch.layers import *
 from pytorch_lightning import LightningModule, Trainer
 import torch.optim as optim
-import torch.nn.functional as F
-import torch.nn as nn
-import numpy as np
-import matplotlib.pyplot as plt
-import torchvision.transforms as transforms
-from torchvision import datasets, transforms
 import torch
-#from high_order_mlp import HighOrderMLP
-from single_image_dataset import ImageNeighborhoodReader
-from torch.utils.data import DataLoader, Dataset
 from high_order_layers_torch.networks import *
 from single_text_dataset import SingleTextDataset
 
@@ -35,14 +25,14 @@ class Net(LightningModule):
             n_out=cfg.mlp.n_out,
             in_width=cfg.mlp.input.width,
             in_segments=cfg.mlp.input.segments,
-            out_width=cfg.mlp.output.width,
+            out_width=256,  # cfg.mlp.output.width,
             out_segments=cfg.mlp.output.segments,
             hidden_width=cfg.mlp.hidden.width,
             hidden_layers=cfg.mlp.hidden.layers,
             hidden_segments=cfg.mlp.hidden.segments,
         )
         self.root_dir = f"{hydra.utils.get_original_cwd()}"
-        self.loss = nn.MSELoss()
+        self.loss = torch.nn.CrossEntropyLoss()
 
     def forward(self, x):
         return self.model(x)
@@ -50,21 +40,22 @@ class Net(LightningModule):
     def setup(self, stage):
 
         full_path = [f"{self.root_dir}/{path}" for path in self.cfg.filenames]
-        #print('full_path', full_path)
         self.train_dataset = SingleTextDataset(
-            filenames=full_path)
+            filenames=full_path, max_size=self.cfg.data.max_size)
         self.test_dataset = SingleTextDataset(
-            filenames=full_path)
+            filenames=full_path, max_size=self.cfg.data.max_size)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
-        loss = self.loss(y_hat, y)
+        loss = self.loss(y_hat, y.flatten())
 
         self.log(f'train_loss', loss, prog_bar=True)
-        #self.log(f'train_acc', acc, prog_bar=True)
 
         return loss
+
+    def test_step(self, batch, batch_idx):
+        return self.training_step(batch, batch_idx)
 
     def train_dataloader(self):
         trainloader = torch.utils.data.DataLoader(
@@ -81,7 +72,7 @@ class Net(LightningModule):
         return optim.Adam(self.parameters(), lr=self.cfg.lr)
 
 
-@hydra.main(config_name="./config/language_config")
+@hydra.main(config_path="./config", config_name="language_config")
 def run_language_interpolation(cfg: DictConfig):
     # TODO use a space filling curve to map x,y linear coordinates
     # to space filling coordinates 1d coordinate.
@@ -92,99 +83,14 @@ def run_language_interpolation(cfg: DictConfig):
     if cfg.train is True:
         trainer = Trainer(max_epochs=cfg.max_epochs, gpus=cfg.gpus)
         model = Net(cfg)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
         trainer.fit(model)
         print('testing')
-        trainer.test(model)
+        result = trainer.test(model)
+        print('result', result)
         print('finished testing')
         print('best check_point', trainer.checkpoint_callback.best_model_path)
+        print('loss', result[0]['train_loss'])
+        return result[0]['train_loss']
     else:
         # plot some data
         print('evaluating result')
@@ -193,7 +99,6 @@ def run_language_interpolation(cfg: DictConfig):
         print('checkpoint_path', checkpoint_path)
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
-        
 
 
 if __name__ == "__main__":

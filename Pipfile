@@ -20,6 +20,7 @@ hydra-core = "*"
 torchvision = "*"
 hilbertcurve = "*"
 pytest = "*"
+hydra-nevergrad-sweeper = "*"
 
 [packages.high_order_layers_torch]
 git = "git://github.com/jloveric/high-order-layers-torch"
