@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import Dataset
-from typing import List
+from typing import List, Tuple
 
 
 class SingleTextDataset(Dataset):
@@ -38,10 +38,43 @@ def float_to_ascii(float_tensor: torch.Tensor):
     return ((float_tensor+1.0)*128-0.5).int()
 
 
-def generate_dataset(text_in: str, features: int, targets: int):
+def encode_input_from_text(text_in: str, features: int) -> Tuple[torch.tensor, str]:
+    """
+    Convert a string to input that the network can take.  Take the last "features" number
+    of characters and convert to numbers.  Return those numbers as the network input, also
+    return the raw_features (the text used to create the numbers).
+    Args :
+        text_in : input string.
+        features : number of input features.
+    Returns :
+        tensor encoding, text used to create encoding.
+    """
+    text = text_in.encode("ascii", "ignore").decode('ascii')
+    raw_sample = text[-(features):]
+    encoding = [ord(val) for val in raw_sample]
+    return torch.tensor(encoding), raw_sample
 
-    udata = text_in  # text_in.decode("utf-8")
-    text = udata.encode("ascii", "ignore").decode('ascii')
+
+def decode_output_to_text(encoding: torch.tensor, topk: int = 1) -> Tuple[torch.tensor, str]:
+    """
+    Takes an output from the network and converts to text.
+    Args :
+        encoding : Tensor of size 128 for each ascii character
+        topk : The number of maximum values to report back
+    Returns :
+        Tuple of topk values and corresponding topk indices.
+    """
+    probabilities = torch.nn.Softmax(dim=0)(encoding)
+
+    ascii_codes = torch.topk(probabilities, k=topk, dim=0)
+    ascii_values = [chr(val).encode("ascii", "ignore").decode('ascii')
+                    for val in ascii_codes[1]]
+
+    return ascii_codes[0], ascii_codes[1], ascii_values
+
+
+def generate_dataset(text_in: str, features: int, targets: int):
+    text = text_in.encode("ascii", "ignore").decode('ascii')
     print('text[1:100', text[1:100])
     final = len(text)-(targets+features)
     feature_list = []

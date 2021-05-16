@@ -5,6 +5,7 @@ name = "pypi"
 
 [dev-packages]
 tensorboard = "*"
+pytest = "*"
 
 [requires]
 python_version = "3"
@@ -21,6 +22,7 @@ torchvision = "*"
 hilbertcurve = "*"
 pytest = "*"
 hydra-nevergrad-sweeper = "*"
+torchsummary = "*"
 
 [packages.high_order_layers_torch]
 git = "git://github.com/jloveric/high-order-layers-torch"

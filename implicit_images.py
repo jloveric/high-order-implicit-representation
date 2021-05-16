@@ -74,7 +74,7 @@ class Net(LightningModule):
     def forward(self, x):
         return self.model(x)
 
-    def setup(self, stage):
+    def setup(self, stage: str):
 
         full_path = [f"{self.root_dir}/{path}" for path in self.cfg.images]
         #print('full_path', full_path)
@@ -85,7 +85,6 @@ class Net(LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        # print('x',x,'y',y)
         y_hat = self(x)
 
         loss = self.loss(y_hat, y)

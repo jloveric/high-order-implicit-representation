@@ -10,7 +10,8 @@ import torch.optim as optim
 import torch
 from high_order_layers_torch.networks import *
 from single_text_dataset import SingleTextDataset
-
+from torchsummary import summary
+from single_text_dataset import dataset_from_file
 
 class Net(LightningModule):
     def __init__(self, cfg: DictConfig):
@@ -25,7 +26,7 @@ class Net(LightningModule):
             n_out=cfg.mlp.n_out,
             in_width=cfg.mlp.input.width,
             in_segments=cfg.mlp.input.segments,
-            out_width=256,  # cfg.mlp.output.width,
+            out_width=128,  # ascii has 128 characters
             out_segments=cfg.mlp.output.segments,
             hidden_width=cfg.mlp.hidden.width,
             hidden_layers=cfg.mlp.hidden.layers,
@@ -99,6 +100,15 @@ def run_language_interpolation(cfg: DictConfig):
         print('checkpoint_path', checkpoint_path)
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
+
+        feature_list, target_list = dataset_from_file(
+            filenames[0], features=features, targets=targets, max_size=max_size)
+        
+        summary(model,(10,))
+
+        #text = cfg.text
+        
+
 
 
 if __name__ == "__main__":

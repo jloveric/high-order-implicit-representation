@@ -55,3 +55,11 @@ running with Nevergrad
 ```
 python language_interpolation.py hydra/sweeper=nevergrad --cfg hydra -p hydra.sweeper
 ```
+## Apply a model
+```
+python language_interpolation.py train=False checkpoint=\"multirun/2021-05-15/18-05-25/3/lightning_logs/version_0/checkpoints/epoch=9-step=17099.ckpt\"
+```
+# Run tests
+```
+pytest test.py -s
+```
