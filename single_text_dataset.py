@@ -27,15 +27,15 @@ class SingleTextDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        return (self.inputs[idx]-128+0.5)/128.0, self.output[idx]
+        return (self.inputs[idx]-64+0.5)/64.0, self.output[idx]
 
 
 def ascii_to_float(ascii_tensor: torch.Tensor):
-    return (ascii_tensor-128+0.5)/128
+    return (ascii_tensor-64+0.5)/64
 
 
 def float_to_ascii(float_tensor: torch.Tensor):
-    return ((float_tensor+1.0)*128-0.5).int()
+    return ((float_tensor+1.0)*64-0.5).int()
 
 
 def encode_input_from_text(text_in: str, features: int) -> Tuple[torch.tensor, str]:
