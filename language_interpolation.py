@@ -12,7 +12,7 @@ from high_order_layers_torch.networks import *
 from single_text_dataset import SingleTextDataset
 from torchsummary import summary
 from single_text_dataset import dataset_from_file, encode_input_from_text, decode_output_to_text, ascii_to_float
-
+import random
 
 class Net(LightningModule):
     def __init__(self, cfg: DictConfig):
@@ -109,10 +109,13 @@ def run_language_interpolation(cfg: DictConfig):
             encoding = ascii_to_float(encoding).unsqueeze(dim=0)
             model.eval()
             output = model(encoding)
-            values, indices, ascii = decode_output_to_text(encoding=output[0])
-            text_in = text_in+ascii[0]
+            values, indices, ascii = decode_output_to_text(encoding=output[0], topk=5)
+            #print('values', values)
+            actual = random.choices(ascii, values.tolist())
+            #print('actual', actual)
+            text_in = text_in+actual[0]
             
-        print('final:', text_in)
+        print('final:', text_in.replace('\n',' '))
 
 
 if __name__ == "__main__":
