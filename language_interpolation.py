@@ -11,7 +11,8 @@ import torch
 from high_order_layers_torch.networks import *
 from single_text_dataset import SingleTextDataset
 from torchsummary import summary
-from single_text_dataset import dataset_from_file
+from single_text_dataset import dataset_from_file, encode_input_from_text, decode_output_to_text, ascii_to_float
+
 
 class Net(LightningModule):
     def __init__(self, cfg: DictConfig):
@@ -100,15 +101,18 @@ def run_language_interpolation(cfg: DictConfig):
         print('checkpoint_path', checkpoint_path)
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
-
-        feature_list, target_list = dataset_from_file(
-            filenames[0], features=features, targets=targets, max_size=max_size)
+        text_in = cfg.text
+        print('start:', text_in)
         
-        summary(model,(10,))
-
-        #text = cfg.text
-        
-
+        for i in range(100) :
+            encoding, text_used = encode_input_from_text(text_in=text_in, features=10)
+            encoding = ascii_to_float(encoding).unsqueeze(dim=0)
+            model.eval()
+            output = model(encoding)
+            values, indices, ascii = decode_output_to_text(encoding=output[0])
+            text_in = text_in+ascii[0]
+            
+        print('final:', text_in)
 
 
 if __name__ == "__main__":

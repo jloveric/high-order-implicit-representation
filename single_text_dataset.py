@@ -62,7 +62,8 @@ def decode_output_to_text(encoding: torch.tensor, topk: int = 1) -> Tuple[torch.
         encoding : Tensor of size 128 for each ascii character
         topk : The number of maximum values to report back
     Returns :
-        Tuple of topk values and corresponding topk indices.
+        Tuple of topk values and corresponding topk indices and list containing
+        actual ascii values.
     """
     probabilities = torch.nn.Softmax(dim=0)(encoding)
 
