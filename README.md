@@ -1,5 +1,7 @@
 # Implicit Representation with High Order Layers
-Implicit representation of various things using PyTorch and high order layers.  The network uses high order layers as implemented [here](https://github.com/jloveric/high-order-layers-torch).
+Implicit representation of various things using PyTorch and high order layers.  The network uses high order layers as implemented [here](https://github.com/jloveric/high-order-layers-torch).  Implicit representation is a fancy way of saying creating a function that fits the training set (ignoring generalization), however you may end up with a compact representation of the original data and a function that interpolates the data.  Neural networks, and especially high-order networks are good at this problem.
+
+# Implicit Representation of Images
 
 Train a model
 ```
@@ -46,7 +48,7 @@ Training on the image of the newt and applying to the image of jupiter gives
 the following results.
 ![Piecewise Polynomial Newt to Jupiter.](results/salamander_to_jupiter.png)
 
-# Language Interpolation
+# Implicit Representation of Books (Text), (Language Interpolation)
 Run with this command
 ```
 python language_interpolation.py 
@@ -57,8 +59,14 @@ python language_interpolation.py hydra/sweeper=nevergrad --cfg hydra -p hydra.sw
 ```
 ## Apply a model
 ```
-python language_interpolation.py train=False checkpoint=\"multirun/2021-05-16/11-22-10/1/lightning_logs/version_0/checkpoints/epoch=9-step=17099.ckpt\" text="My name is frankenstein"
+python language_interpolation.py train=False checkpoint=\"multirun/2021-05-16/17-27-58/2/lightning_logs/version_0/checkpoints/epoch=19-step=34199.ckpt\" topk=2 num_predict=200 text="The stars were"
 ```
+example output (model trained to predict the next character given the preceeding 10) using a single hidden layer
+```
+prompt: The stars were
+output: The stars were dreams of my friends and the secret of my father the expenses, in the morning when I awill a trees than sunsitice of my friends when I continued, and the deatures, and the destruction of distance of 
+```
+The model attempts to memorize the entire book (Frankenstein) by predicting the next character. Each character is provided as a probability by the network.  By choosing (weighted by probability) between the top 2 next characters you produce text (so far nonsense) that changes every time the function is called.  This is fairly standard, but we deliberately memorize the training set, there is no test set.
 # Run tests
 ```
 pytest test.py -s

@@ -102,20 +102,21 @@ def run_language_interpolation(cfg: DictConfig):
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
         text_in = cfg.text
-        print('start:', text_in)
+        print('prompt:', text_in)
         
-        for i in range(100) :
+        for i in range(cfg.num_predict) :
             encoding, text_used = encode_input_from_text(text_in=text_in, features=10)
             encoding = ascii_to_float(encoding).unsqueeze(dim=0)
             model.eval()
             output = model(encoding)
-            values, indices, ascii = decode_output_to_text(encoding=output[0], topk=5)
-            #print('values', values)
+            values, indices, ascii = decode_output_to_text(encoding=output[0], topk=cfg.topk)
+            
+            # pick the next character weighted by probabilities of each character
+            # prevents the same response for every query.
             actual = random.choices(ascii, values.tolist())
-            #print('actual', actual)
             text_in = text_in+actual[0]
             
-        print('final:', text_in.replace('\n',' '))
+        print('output:', text_in.replace('\n',' '))
 
 
 if __name__ == "__main__":

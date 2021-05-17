@@ -24,7 +24,7 @@ mlp :
 data :
   max_size : -1
 
-max_epochs: 20
+max_epochs: 40
 gpus: 1
 lr: 1e-4
 batch_size: 256
@@ -35,6 +35,8 @@ checkpoint: null
 rotations: 1 # 1 is x,y, 2 is x,y, x-y, x+y, greater includes additional rotations
 
 text : "This is sample text"
+topk : 5
+num_predict: 100
 
 #defaults:
 #  - override hydra/sweeper: nevergrad
