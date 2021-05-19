@@ -1,12 +1,11 @@
 # Implicit Representation with High Order Layers
-Implicit representation of various things using PyTorch and high order layers.  The network uses high order layers as implemented [here](https://github.com/jloveric/high-order-layers-torch).  Implicit representation is a fancy way of saying creating a function that fits the training set (ignoring generalization), however you may end up with a compact representation of the original data and a function that interpolates the data.  Neural networks, and especially high-order networks are good at this problem.
+Implicit representation of various things using PyTorch and high order layers.  The network uses high order layers as implemented [here](https://github.com/jloveric/high-order-layers-torch).  Implicit representation is creating a function that approximates your data (cuve fitting).  The function can be a compact representation of the original data and also provides an interpolation of that data.  This differs from typical use of neural networks in that you are not classifying data.  High-order neural networks are especially good at solving this problem.  Below we show example functions for images and books, trying to represent all of frankenstein as a function (the latter being more like overfitting the dataset to predict the next character).
 
 # Implicit Representation of Images
 
 Train a model
 ```
 python implicit_images.py mlp.hidden.width=10 mlp.hidden.layers=2 lr=1e-3 mlp.n=3 mlp.periodicity=2.0 mlp.layer_type=continuous mlp.hidden.segments=2 mlp.input.segments=100 mlp.output.segments=2 batch_size=256
-
 ```
 
 Evaluate a model example

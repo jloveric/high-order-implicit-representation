@@ -13,6 +13,9 @@ from single_text_dataset import SingleTextDataset
 from torchsummary import summary
 from single_text_dataset import dataset_from_file, encode_input_from_text, decode_output_to_text, ascii_to_float
 import random
+from pytorch_lightning.metrics import Accuracy
+
+
 
 class Net(LightningModule):
     def __init__(self, cfg: DictConfig):
@@ -35,6 +38,8 @@ class Net(LightningModule):
         )
         self.root_dir = f"{hydra.utils.get_original_cwd()}"
         self.loss = torch.nn.CrossEntropyLoss()
+        self.accuracy = Accuracy(top_k=2)
+        
 
     def forward(self, x):
         return self.model(x)
@@ -43,17 +48,20 @@ class Net(LightningModule):
 
         full_path = [f"{self.root_dir}/{path}" for path in self.cfg.filenames]
         self.train_dataset = SingleTextDataset(
-            filenames=full_path, max_size=self.cfg.data.max_size)
+            filenames=full_path, features=self.cfg.mlp.features, max_size=self.cfg.data.max_size)
         self.test_dataset = SingleTextDataset(
-            filenames=full_path, max_size=self.cfg.data.max_size)
+            filenames=full_path, features=self.cfg.mlp.features, max_size=self.cfg.data.max_size)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
         loss = self.loss(y_hat, y.flatten())
 
+        diff = torch.argmax(y_hat,dim=1)-y.flatten()
+        accuracy = torch.where(diff==0,1,0).sum()/len(diff)
+        
         self.log(f'train_loss', loss, prog_bar=True)
-
+        self.log(f'acc', accuracy, prog_bar=True)
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -76,8 +84,6 @@ class Net(LightningModule):
 
 @hydra.main(config_path="./config", config_name="language_config")
 def run_language_interpolation(cfg: DictConfig):
-    # TODO use a space filling curve to map x,y linear coordinates
-    # to space filling coordinates 1d coordinate.
     print(OmegaConf.to_yaml(cfg))
     print("Working directory : {}".format(os.getcwd()))
     print(f"Orig working directory    : {hydra.utils.get_original_cwd()}")
@@ -101,22 +107,30 @@ def run_language_interpolation(cfg: DictConfig):
         print('checkpoint_path', checkpoint_path)
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
+
         text_in = cfg.text
-        print('prompt:', text_in)
-        
-        for i in range(cfg.num_predict) :
-            encoding, text_used = encode_input_from_text(text_in=text_in, features=10)
+        features = cfg.mlp.input.width
+
+        # Make sure the prompt text is long enough.  The network is expecting a prompt
+        # of size features.  It will take the last "features" characters from the
+        # provided string and ignore the rest.
+        text_in = text_in.rjust(features)
+
+        for i in range(cfg.num_predict):
+            encoding, text_used = encode_input_from_text(
+                text_in=text_in, features=features)
             encoding = ascii_to_float(encoding).unsqueeze(dim=0)
             model.eval()
             output = model(encoding)
-            values, indices, ascii = decode_output_to_text(encoding=output[0], topk=cfg.topk)
-            
+            values, indices, ascii = decode_output_to_text(
+                encoding=output[0], topk=cfg.topk)
+
             # pick the next character weighted by probabilities of each character
             # prevents the same response for every query.
             actual = random.choices(ascii, values.tolist())
             text_in = text_in+actual[0]
-            
-        print('output:', text_in.replace('\n',' '))
+
+        print('output:', text_in.replace('\n', ' '))
 
 
 if __name__ == "__main__":

@@ -3,8 +3,15 @@ filenames :
   - "books/the_raven.txt"
 mlp :
   layer_type : "discontinuous"
+
+  # Number of characters as input
+  features : 128
+
+  # Polynomial interpolation points.  Polynomial order
+  # is (n-1).  In the case of Fourier series, n is the
+  # number of Fourier components.
   n : 3
-  n_in : null
+  n_in : 2
   n_out : null
   n_hidden : null
   periodicity : 2.0
@@ -12,12 +19,12 @@ mlp :
   scale : 2.0
   input :
     segments : 128
-    width : 10
+    width : ${mlp.features}
   output :
     segments : 1
     width : 128
   hidden :
-    segments : 10
+    segments : 100
     layers : 1
     width : 100
 
@@ -38,42 +45,44 @@ text : "This is sample text"
 topk : 5
 num_predict: 100
 
-#defaults:
-#  - override hydra/sweeper: nevergrad
-#
-# hydra:
-#   sweeper:
-#     optim:
-#       # name of the nevergrad optimizer to use
-#       # OnePlusOne is good at low budget, but may converge early
-#       optimizer: OnePlusOne
-#       # total number of function evaluations to perform
-#       budget: 100
-#       # number of parallel workers for performing function evaluations
-#       num_workers: 10
-#       # maximize: true  # comment out for maximization
-#     # default parametrization of the search space
-#     parametrization:
-#       mlp:
-#         n :
-#           init: 2
-#           lower : 2
-#           upper: 6
-#           integer: true
-#         hidden :
-#           segments :
-#             init : 1
-#             lower : 1
-#             upper : 100
-#             integer: true
-#           layers :
-#             init : 1
-#             lower : 1
-#             upper : 4
-#             integer : true
-#           width :
-#             init : 5
-#             lower : 5
-#             start : 5
-#             upper : 200
-#             integer : true
+defaults:
+ - override hydra/sweeper: nevergrad
+
+hydra:
+  sweeper:
+    optim:
+      # name of the nevergrad optimizer to use
+      # OnePlusOne is good at low budget, but may converge early
+      optimizer: OnePlusOne
+      # total number of function evaluations to perform
+      budget: 100
+      # number of parallel workers for performing function evaluations
+      num_workers: 10
+      # maximize: true  # comment out for maximization
+    # default parametrization of the search space
+    parametrization:
+      mlp.n :
+        init: 2
+        lower : 2
+        upper: 4
+        integer: true
+      mlp.hidden.segments :
+        init : 1
+        lower : 1
+        upper : 200
+        integer: true
+      mlp.hidden.layers :
+        init : 1
+        lower : 1
+        upper : 2
+        integer : true
+      mlp.hidden.width :
+        init : 5
+        lower : 5
+        upper : 200
+        integer : true
+      mlp.output.segments :
+        init : 1
+        lower : 1
+        upper : 10
+        integer: true
