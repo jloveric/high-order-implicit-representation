@@ -1,5 +1,5 @@
 # Implicit Representation with High Order Layers
-Implicit representation of various things using PyTorch and high order layers.  The network uses high order layers as implemented [here](https://github.com/jloveric/high-order-layers-torch).  Implicit representation is creating a function that approximates your data (cuve fitting).  The function can be a compact representation of the original data and also provides an interpolation of that data.  This differs from typical use of neural networks in that you are not classifying data.  High-order neural networks are especially good at solving this problem.  Below we show example functions for images and books, trying to represent all of frankenstein as a function (the latter being more like overfitting the dataset to predict the next character).
+Implicit representation of various things using PyTorch and high order layers.  The network uses high order layers as implemented [here](https://github.com/jloveric/high-order-layers-torch).  Implicit representation is creating a function that approximates your data (cuve fitting).  The function can be a compact representation of the original data and also provides an interpolation of that data.  Below we show example functions for images.
 
 # Implicit Representation of Images
 
@@ -46,27 +46,3 @@ python implicit_neighborhood.py train=False checkpoint=<>
 Training on the image of the newt and applying to the image of jupiter gives
 the following results.
 ![Piecewise Polynomial Newt to Jupiter.](results/salamander_to_jupiter.png)
-
-# Implicit Representation of Books (Text), (Language Interpolation)
-Run with this command
-```
-python language_interpolation.py 
-```
-running with Nevergrad
-```
-python language_interpolation.py hydra/sweeper=nevergrad --cfg hydra -p hydra.sweeper
-```
-## Apply a model
-```
-python language_interpolation.py train=False checkpoint=\"multirun/2021-05-16/17-27-58/2/lightning_logs/version_0/checkpoints/epoch=19-step=34199.ckpt\" topk=2 num_predict=200 text="The stars were"
-```
-example output (model trained to predict the next character given the preceeding 10) using a single hidden layer
-```
-prompt: The stars were
-output: The stars were dreams of my friends and the secret of my father the expenses, in the morning when I awill a trees than sunsitice of my friends when I continued, and the deatures, and the destruction of distance of 
-```
-The model attempts to memorize the entire book (Frankenstein) by predicting the next character. Each character is provided as a probability by the network.  By choosing (weighted by probability) between the top 2 next characters you produce text (so far nonsense) that changes every time the function is called.  This is fairly standard, but we deliberately memorize the training set, there is no test set.
-# Run tests
-```
-pytest test.py -s
-```
