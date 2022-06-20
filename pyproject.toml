@@ -19,6 +19,7 @@ hilbertcurve = "^2.0.5"
 torchsummary = "^1.5.1"
 high-order-layers-torch = "^1.1.9"
 omegaconf = "^2.2.2"
+stripe-layers = {git = "https://github.com/jloveric/stripe-layers", rev = "main"}
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
