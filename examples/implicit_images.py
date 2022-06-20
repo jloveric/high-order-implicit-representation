@@ -1,10 +1,9 @@
 from typing import List
 
-from pytorch_lightning.metrics import Metric
 import os
 from omegaconf import DictConfig, OmegaConf
 import hydra
-from pytorch_lightning.metrics.functional import accuracy
+from torchmetrics.functional import accuracy
 from high_order_layers_torch.layers import *
 from high_order_layers_torch.networks import *
 from pytorch_lightning import LightningModule, Trainer
@@ -16,8 +15,9 @@ import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 from torchvision import datasets, transforms
 import torch
-#from high_order_mlp import HighOrderMLP
-from single_image_dataset import image_to_dataset
+
+# from high_order_mlp import HighOrderMLP
+from high_order_implicit_representation.single_image_dataset import image_to_dataset
 from torch.utils.data import DataLoader, Dataset
 
 
@@ -25,7 +25,8 @@ class ImageDataset(Dataset):
     def __init__(self, filenames: List[str], rotations: int = 1):
         # super().__init__()
         self.output, self.input, self.image = image_to_dataset(
-            filenames[0], rotations=rotations)
+            filenames[0], rotations=rotations
+        )
 
         """
         x = (2.0*torch.rand(1000)-1.0).view(-1, 1)
@@ -77,11 +78,13 @@ class Net(LightningModule):
     def setup(self, stage: str):
 
         full_path = [f"{self.root_dir}/{path}" for path in self.cfg.images]
-        #print('full_path', full_path)
+        # print('full_path', full_path)
         self.train_dataset = ImageDataset(
-            filenames=full_path, rotations=self.cfg.rotations)
+            filenames=full_path, rotations=self.cfg.rotations
+        )
         self.test_dataset = ImageDataset(
-            filenames=full_path, rotations=self.cfg.rotations)
+            filenames=full_path, rotations=self.cfg.rotations
+        )
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -89,27 +92,35 @@ class Net(LightningModule):
 
         loss = self.loss(y_hat, y)
 
-        self.log(f'train_loss', loss, prog_bar=True)
-        #self.log(f'train_acc', acc, prog_bar=True)
+        self.log(f"train_loss", loss, prog_bar=True)
+        # self.log(f'train_acc', acc, prog_bar=True)
 
         return loss
 
     def train_dataloader(self):
         trainloader = torch.utils.data.DataLoader(
-            self.train_dataset, batch_size=self.cfg.batch_size, shuffle=True, num_workers=10)
+            self.train_dataset,
+            batch_size=self.cfg.batch_size,
+            shuffle=True,
+            num_workers=10,
+        )
         return trainloader
 
     def test_dataloader(self):
 
         testloader = torch.utils.data.DataLoader(
-            self.test_dataset, batch_size=self.cfg.batch_size, shuffle=False, num_workers=10)
+            self.test_dataset,
+            batch_size=self.cfg.batch_size,
+            shuffle=False,
+            num_workers=10,
+        )
         return testloader
 
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=self.cfg.lr)
 
 
-@hydra.main(config_name="./config/images_config")
+@hydra.main(config_path="../config", config_name="images_config")
 def run_implicit_images(cfg: DictConfig):
     # TODO use a space filling curve to map x,y linear coordinates
     # to space filling coordinates 1d coordinate.
@@ -121,34 +132,33 @@ def run_implicit_images(cfg: DictConfig):
         trainer = Trainer(max_epochs=cfg.max_epochs, gpus=cfg.gpus)
         model = Net(cfg)
         trainer.fit(model)
-        print('testing')
+        print("testing")
         trainer.test(model)
-        print('finished testing')
-        print('best check_point', trainer.checkpoint_callback.best_model_path)
+        print("finished testing")
+        print("best check_point", trainer.checkpoint_callback.best_model_path)
     else:
         # plot some data
-        print('evaluating result')
-        print('cfg.checkpoint', cfg.checkpoint)
+        print("evaluating result")
+        print("cfg.checkpoint", cfg.checkpoint)
         checkpoint_path = f"{hydra.utils.get_original_cwd()}/{cfg.checkpoint}"
-        print('checkpoint_path', checkpoint_path)
+        print("checkpoint_path", checkpoint_path)
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
         image_dir = f"{hydra.utils.get_original_cwd()}/{cfg.images[0]}"
-        output, inputs, image = image_to_dataset(
-            image_dir, rotations=cfg.rotations)
+        output, inputs, image = image_to_dataset(image_dir, rotations=cfg.rotations)
         y_hat = model(inputs)
         max_x = torch.max(inputs, dim=0)
         max_y = torch.max(inputs, dim=1)
-        print('x_max', max_x, 'y_max', max_y)
-        print('y_hat.shape', y_hat.shape)
-        print('image.shape', image.shape)
+        print("x_max", max_x, "y_max", max_y)
+        print("y_hat.shape", y_hat.shape)
+        print("image.shape", image.shape)
         ans = y_hat.reshape(image.shape[0], image.shape[1], image.shape[2])
-        ans = (ans+1.0)/2.0
+        ans = (ans + 1.0) / 2.0
         f, axarr = plt.subplots(1, 2)
         axarr[0].imshow(ans.detach().numpy())
-        axarr[0].set_title('fit')
+        axarr[0].set_title("fit")
         axarr[1].imshow(image)
-        axarr[1].set_title('original')
+        axarr[1].set_title("original")
         plt.show()
 
 
