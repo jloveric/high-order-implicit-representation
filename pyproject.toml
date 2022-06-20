@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "implicit-representation"
+version = "0.1.0"
+description = ""
+authors = ["John <john.loverich@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+hydra-core = "^1.2.0"
+hydra-nevergrad-sweeper = "^1.2.0"
+torch = "^1.11.0"
+Pillow = "^9.1.1"
+matplotlib = "^3.5.2"
+scikit-image = "^0.19.3"
+pytorch-lightning = "^1.6.4"
+torchvision = "^0.12.0"
+hilbertcurve = "^2.0.5"
+torchsummary = "^1.5.1"
+high-order-layers-torch = "^1.1.9"
+
+[tool.poetry.dev-dependencies]
+black = "^22.3.0"
+pytest = "^7.1.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
