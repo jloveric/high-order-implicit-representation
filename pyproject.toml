@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "implicit-representation"
+name = "high-order-implicit-representation"
 version = "0.1.0"
 description = ""
 authors = ["John <john.loverich@gmail.com>"]
