@@ -1,6 +1,6 @@
 from typing import Optional
 from pathlib import Path
-
+from stripe_layers.StripeLayer import create_stripe_list
 from torch.utils.data import DataLoader, Dataset, random_split
 
 import pytorch_lightning as pl
@@ -12,19 +12,20 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class ImageDataset(Dataset):
+class RandomImageSampleDataset(Dataset):
     def __init__(
         self,
         image_size: int,
         path_list: List[str],
         num_train_pixels: int = 25,
         num_target_pixels: int = 1,
+        device="cuda",
     ):
         super().__init__()
         self._image_size = image_size
         self._paths = path_list
-        self.num_train_pixels = num_train_pixels
-        self.num_target_pixels = num_target_pixels
+        self._num_train_pixels = num_train_pixels
+        self._num_target_pixels = num_target_pixels
 
         self.transform = transforms.Compose(
             [
@@ -35,6 +36,10 @@ class ImageDataset(Dataset):
             ]
         )
 
+        stripe_list = create_stripe_list(
+            width=image_size, height=image_size, device=device
+        )
+
     def __len__(self):
         return len(self.paths)
 
@@ -43,6 +48,8 @@ class ImageDataset(Dataset):
         img = Image.open(path)
 
         img = self.transform(img)
+
+        # Create an mapping
 
 
 class ImageDataModule(pl.LightningDataModule):

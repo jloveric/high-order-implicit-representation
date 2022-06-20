@@ -7,7 +7,7 @@ import torch
 
 
 def test_image_to_dataset():
-    assert True is True
+    result = RandomImageSampleDataset()
 
 
 def test_image_neighborhood_reader():
