@@ -1,6 +1,7 @@
-#from PIL import Image
+# from PIL import Image
 from matplotlib import image
 import torch
+from torch import Tensor
 import numpy as np
 from hilbertcurve.hilbertcurve import HilbertCurve
 import math
@@ -20,20 +21,21 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     img = image.imread(filename)
 
     torch_image = torch.from_numpy(np.array(img))
-    print('image.shape', torch_image.shape)
+    print("image.shape", torch_image.shape)
     max_size = max(torch_image.shape[0], torch_image.shape[1])
 
     xv, yv = torch.meshgrid(
-        [torch.arange(torch_image.shape[0]), torch.arange(torch_image.shape[1])])
+        [torch.arange(torch_image.shape[0]), torch.arange(torch_image.shape[1])]
+    )
 
     # rescale so the maximum values is between -1 and 1
-    xv = (xv/max_size)*2-1
-    yv = (yv/max_size)*2-1
+    xv = (xv / max_size) * 2 - 1
+    yv = (yv / max_size) * 2 - 1
 
     xv = xv.reshape(xv.shape[0], xv.shape[1], 1)
     yv = yv.reshape(yv.shape[0], yv.shape[1], 1)
 
-    '''
+    """
     if peano is True:
         # can index 2^{n*p} cubes with p = 2 (dimension)
         n = 2  # number of dimensions
@@ -42,11 +44,10 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
         cartesian_position = torch_position.tolist()
         hilbert_distances = hilbert_curve.distance_from_points(
             cartesian_position)
-    '''
+    """
 
     if rotations == 2:
-        torch_position = torch.cat(
-            [xv, yv, (xv-yv)/2.0, (xv+yv)/2.0], dim=2)
+        torch_position = torch.cat([xv, yv, (xv - yv) / 2.0, (xv + yv) / 2.0], dim=2)
         torch_position = torch_position.reshape(-1, 4)
     elif rotations == 1:
         torch_position = torch.cat([xv, yv], dim=2)
@@ -54,23 +55,23 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     else:
         line_list = []
         for i in range(rotations):
-            theta = (math.pi/2.0)*(i/rotations)
-            print('theta', theta)
+            theta = (math.pi / 2.0) * (i / rotations)
+            print("theta", theta)
             rot_x = math.cos(theta)
             rot_y = math.sin(theta)
-            rot_sum = math.fabs(rot_x)+math.fabs(rot_y)
+            rot_sum = math.fabs(rot_x) + math.fabs(rot_y)
 
             # Add the line and the line orthogonal
-            line_list.append((rot_x*xv+rot_y*yv)/rot_sum)
-            line_list.append((rot_x*xv-rot_y*yv)/rot_sum)
+            line_list.append((rot_x * xv + rot_y * yv) / rot_sum)
+            line_list.append((rot_x * xv - rot_y * yv) / rot_sum)
 
         torch_position = torch.cat(line_list, dim=2)
-        torch_position = torch_position.reshape(-1, 2*rotations)
+        torch_position = torch_position.reshape(-1, 2 * rotations)
 
-        #raise(f"Rotation {rotations} not implemented.")
+        # raise(f"Rotation {rotations} not implemented.")
 
-    torch_image_flat = torch_image.reshape(-1, 3)*2.0/255.0-1
-    print('torch_max', torch.max(torch_image_flat))
+    torch_image_flat = torch_image.reshape(-1, 3) * 2.0 / 255.0 - 1
+    print("torch_max", torch.max(torch_image_flat))
 
     return torch_image_flat, torch_position, torch_image
 
@@ -78,26 +79,27 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
 class ImageNeighborhoodReader:
     def __init__(self, filename: str, width=3, outside=1):
         self._input, self._output, self._image = self.image_neighborhood_dataset(
-            filename=filename, width=width, outside=outside)
+            filename=filename, width=width, outside=outside
+        )
 
     @property
-    def features(self):
+    def features(self) -> Tensor:
         return self._input
 
     @property
-    def targets(self):
+    def targets(self) -> Tensor:
         return self._output
 
     @property
-    def image(self) :
+    def image(self) -> Tensor:
         return self._image
 
     @property
-    def lastx(self):
+    def lastx(self) -> int:
         return self._lastx
 
     @property
-    def lasty(self):
+    def lasty(self) -> int:
         return self._lasty
 
     def image_neighborhood_dataset(self, filename: str, width=3, outside=1):
@@ -109,7 +111,7 @@ class ImageNeighborhoodReader:
         Return :
             tensor of inner block, tensor of neighborhood
         """
-        print('filename', filename,flush=True)
+        print("filename", filename, flush=True)
         img = image.imread(filename)
 
         torch_image = torch.from_numpy(np.array(img))
@@ -120,16 +122,16 @@ class ImageNeighborhoodReader:
         patch_edge = []
         patch_block = []
 
-        max_x = px-(width+2*outside)
-        max_y = py-(width+2*outside)
+        max_x = px - (width + 2 * outside)
+        max_y = py - (width + 2 * outside)
         self._lastx = max_x
         self._lasty = max_y
 
-        totalx = width+2*outside
+        totalx = width + 2 * outside
         totaly = totalx
 
         edge_mask = torch.ones(totalx, totaly, 3, dtype=bool)
-        edge_mask[outside:(outside+width), outside:(outside+width), :] = False
+        edge_mask[outside : (outside + width), outside : (outside + width), :] = False
         block_mask = ~edge_mask
 
         edge_indexes = edge_mask.flatten()
@@ -137,8 +139,9 @@ class ImageNeighborhoodReader:
 
         for i in range(max_x):
             for j in range(max_y):
-                all_elements = torch_image[i:(i+totalx),
-                                           j:(j+totaly), :].flatten()
+                all_elements = torch_image[
+                    i : (i + totalx), j : (j + totaly), :
+                ].flatten()
 
                 patch = all_elements[block_indexes]
                 edge = all_elements[edge_indexes]
@@ -146,8 +149,8 @@ class ImageNeighborhoodReader:
                 patch_edge.append(edge)
                 patch_block.append(patch)
 
-        patch_block = (2.0/256.0)*torch.stack(patch_block)-1
-        patch_edge = (2.0/256.0)*torch.stack(patch_edge)-1
+        patch_block = (2.0 / 256.0) * torch.stack(patch_block) - 1
+        patch_edge = (2.0 / 256.0) * torch.stack(patch_edge) - 1
 
         print(patch_block, patch_edge)
         return patch_block, patch_edge, torch_image
