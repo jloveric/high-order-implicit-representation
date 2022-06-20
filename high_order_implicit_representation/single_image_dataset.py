@@ -5,6 +5,9 @@ from torch import Tensor
 import numpy as np
 from hilbertcurve.hilbertcurve import HilbertCurve
 import math
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
@@ -154,8 +157,3 @@ class ImageNeighborhoodReader:
 
         print(patch_block, patch_edge)
         return patch_block, patch_edge, torch_image
-
-
-if __name__ == "__main__":
-    # image_to_dataset(filename="images/newt.jpg")
-    ind = ImageNeighborhoodReader(filename="images/newt.jpg")

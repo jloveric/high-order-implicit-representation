@@ -21,6 +21,11 @@ from high_order_implicit_representation.single_image_dataset import (
 )
 from torch.utils.data import DataLoader, Dataset
 from high_order_layers_torch.networks import *
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 class ImageNeighborhoodDataset(Dataset):

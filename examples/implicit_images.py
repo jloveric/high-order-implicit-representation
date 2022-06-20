@@ -19,6 +19,11 @@ import torch
 # from high_order_mlp import HighOrderMLP
 from high_order_implicit_representation.single_image_dataset import image_to_dataset
 from torch.utils.data import DataLoader, Dataset
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 class ImageDataset(Dataset):
