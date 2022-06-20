@@ -1,3 +1,5 @@
+[![CI](https://github.com/jloveric/high-order-implicit-representation/actions/workflows/python-app.yml/badge.svg)](https://github.com/jloveric/high-order-implicit-representation/actions/workflows/python-app.yml)
+
 # Implicit Representation with High Order Layers
 Implicit representation of various things using PyTorch and high order layers.  The network uses high order layers as implemented [here](https://github.com/jloveric/high-order-layers-torch).  Implicit representation is creating a function that approximates your data (cuve fitting).  The function can be a compact representation of the original data and also provides an interpolation of that data.  Below we show example functions for images.
 
