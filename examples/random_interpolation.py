@@ -138,6 +138,7 @@ def run_implicit_images(cfg: DictConfig):
             num_workers=cfg.num_workers,
             split_frac=cfg.split_frac,
             root_dir=root_dir,
+            rotations=cfg.rotations,
         )
 
         lr_monitor = LearningRateMonitor(logging_interval="epoch")

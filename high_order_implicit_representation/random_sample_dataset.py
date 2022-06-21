@@ -112,10 +112,11 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
         num_feature_pixels: int,
         num_target_pixels: int,
         exts: List[str] = ["jpg", "jpeg", "png", "JPEG"],
-        batch_size=32,
-        num_workers=10,
-        split_frac=0.8,
-        root_dir=".",
+        batch_size: int = 32,
+        num_workers: int = 10,
+        split_frac: float = 0.8,
+        root_dir: str = ".",
+        rotations: int = 1,
     ):
         super().__init__()
         self._image_size = image_size
@@ -127,17 +128,19 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
         self._num_workers = num_workers
         self._split_frac = split_frac
         self._root_dir = root_dir
+        self._rotations = rotations
 
     def setup(self, stage: Optional[str] = None):
 
         folder = (Path(self._root_dir) / self._folder).as_posix()
+
         if Path(folder).exists() is False:
             raise ValueError(f"Folder {folder} does not exist.")
 
         paths = [
             p.as_posix()
             for ext in self._exts
-            for p in Path(f"{self._root_dir}/{self._folder}").glob(f"**/*.{ext}")
+            for p in Path(f"{folder}").glob(f"**/*.{ext}")
         ]
         logger.info(f"Image paths [:10] in folder '{self._folder}' are {paths[:10]}")
         size = len(paths)
@@ -155,6 +158,7 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
             path_list=self._train_list,
             num_feature_pixels=self._num_feature_pixels,
             num_target_pixels=self._num_target_pixels,
+            rotations=self._rotations,
         )
 
         self._val_dataset = RandomImageSampleDataset(
@@ -162,12 +166,14 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
             path_list=self._val_list,
             num_feature_pixels=self._num_feature_pixels,
             num_target_pixels=self._num_target_pixels,
+            rotations=self._rotations,
         )
         self._test_dataset = RandomImageSampleDataset(
             image_size=self._image_size,
             path_list=self._test_list,
             num_feature_pixels=self._num_feature_pixels,
             num_target_pixels=self._num_target_pixels,
+            rotations=self._rotations,
         )
 
         logger.info(f"Train dataset size is {len(self._train_dataset)}")
