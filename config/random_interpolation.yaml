@@ -1,8 +1,6 @@
-images:
-  - "images/newt.jpg"
-  - "images/jupiter.jpg"
+folder: images
 mlp:
-  layer_type: "polynomial"
+  layer_type: "continuous"
   n: 3
   n_in: null
   n_out: null
@@ -12,7 +10,7 @@ mlp:
   scale: 2.0
   input:
     segments: 1
-    width: 2
+    width: 70 # (rgb+rotations)*num_random_samples
   output:
     segments: 1
     width: 3
@@ -20,6 +18,11 @@ mlp:
     segments: 1
     layers: 2
     width: 10
+
+num_target_pixels: 1
+num_feature_pixels: 10
+num_workers: 10
+split_frac: 0.5
 
 image_size: 32
 
@@ -30,7 +33,10 @@ batch_size: 256
 # Are you training? Otherwise plot the result
 train: True
 checkpoint: null
-rotations: 1 # 1 is x,y, 2 is x,y, x-y, x+y, greater includes additional rotations
+rotations: 2 # 1 is x,y, 2 is x,y, x-y, x+y, greater includes additional rotations
+
+# early stopping patience
+patience: 10
 
 defaults:
   - optimizer: adam

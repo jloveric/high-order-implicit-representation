@@ -115,6 +115,7 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
         batch_size=32,
         num_workers=10,
         split_frac=0.8,
+        root_dir=".",
     ):
         super().__init__()
         self._image_size = image_size
@@ -125,26 +126,28 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
         self._batch_size = batch_size
         self._num_workers = num_workers
         self._split_frac = split_frac
+        self._root_dir = root_dir
 
     def setup(self, stage: Optional[str] = None):
 
-        self.folder = self._folder
-        self.image_size = self._image_size
-        self.paths = [
+        folder = (Path(self._root_dir) / self._folder).as_posix()
+        if Path(folder).exists() is False:
+            raise ValueError(f"Folder {folder} does not exist.")
+
+        paths = [
             p.as_posix()
             for ext in self._exts
-            for p in Path(f"{self.folder}").glob(f"**/*.{ext}")
+            for p in Path(f"{self._root_dir}/{self._folder}").glob(f"**/*.{ext}")
         ]
-
-        size = len(self.paths)
+        logger.info(f"Image paths [:10] in folder '{self._folder}' are {paths[:10]}")
+        size = len(paths)
 
         train_size = int(self._split_frac * size)
         test_size = (size - train_size) // 2
         val_size = size - train_size - test_size
 
         self._train_list, self._test_list, self._val_list = [
-            list(val)
-            for val in random_split(self.paths, [train_size, test_size, val_size])
+            list(val) for val in random_split(paths, [train_size, test_size, val_size])
         ]
 
         self._train_dataset = RandomImageSampleDataset(
@@ -166,6 +169,10 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
             num_feature_pixels=self._num_feature_pixels,
             num_target_pixels=self._num_target_pixels,
         )
+
+        logger.info(f"Train dataset size is {len(self._train_dataset)}")
+        logger.info(f"Validation dataset size is {len(self._val_dataset)}")
+        logger.info(f"Test dataset size is {len(self._test_dataset)}")
 
     @property
     def train_dataset(self):
