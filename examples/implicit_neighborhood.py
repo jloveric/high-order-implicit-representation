@@ -1,6 +1,6 @@
 from typing import List
 
-from pytorch_lightning.metrics import Metric
+from torchmetrics import Metric
 import os
 from omegaconf import DictConfig, OmegaConf
 import hydra
