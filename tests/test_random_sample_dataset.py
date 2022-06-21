@@ -2,11 +2,12 @@ import pytest
 from high_order_implicit_representation.random_sample_dataset import (
     RandomImageSampleDataset,
     random_image_sample_collate_fn,
+    RandomImageSampleDataModule,
 )
 import torch
 
 
-def test_random_image_sample_dataset():
+def test_random_image_sample_dataset_specific():
     num_feature_pixels = 25
     num_target_pixels = 1
 
@@ -55,3 +56,25 @@ def test_random_image_sample_dataset(num_feature_pixels, num_target_pixels, batc
     assert features.shape[1] == num_feature_pixels
     assert targets.shape[1] == num_target_pixels
     assert features.shape[2] == targets.shape[2]
+
+
+def test_random_image_sample_datamodule():
+
+    dataset = RandomImageSampleDataModule(
+        image_size=32,
+        folder="images",
+        num_feature_pixels=25,
+        num_target_pixels=1,
+    )
+
+    dataset.setup()
+
+    assert len(dataset.train_dataset) > 0
+
+    dataloader = dataset.train_dataloader()
+
+    features, targets = iter(dataloader).next()
+
+    assert features.shape[1] == 25
+    assert targets.shape[1] == 1
+    assert features.shape[2] == targets.shape[2] == 5

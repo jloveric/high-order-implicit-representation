@@ -97,11 +97,13 @@ def random_image_sample_collate_fn(batch):
     return features, targets
 
 
-class ImageDataModule(pl.LightningDataModule):
+class RandomImageSampleDataModule(pl.LightningDataModule):
     def __init__(
         self,
         image_size: int,
         folder: str,
+        num_feature_pixels: int,
+        num_target_pixels: int,
         exts: List[str] = ["jpg", "jpeg", "png", "JPEG"],
         batch_size=32,
         num_workers=10,
@@ -110,6 +112,8 @@ class ImageDataModule(pl.LightningDataModule):
         super().__init__()
         self._image_size = image_size
         self._folder = folder
+        self._num_feature_pixels = num_feature_pixels
+        self._num_target_pixels = num_target_pixels
         self._exts = exts
         self._batch_size = batch_size
         self._num_workers = num_workers
@@ -136,15 +140,24 @@ class ImageDataModule(pl.LightningDataModule):
             for val in random_split(self.paths, [train_size, test_size, val_size])
         ]
 
-        self._train_dataset = ImageDataset(
-            image_size=self._image_size, path_list=self._train_list
+        self._train_dataset = RandomImageSampleDataset(
+            image_size=self._image_size,
+            path_list=self._train_list,
+            num_feature_pixels=self._num_feature_pixels,
+            num_target_pixels=self._num_target_pixels,
         )
 
-        self._val_dataset = ImageDataset(
-            image_size=self._image_size, path_list=self._val_list
+        self._val_dataset = RandomImageSampleDataset(
+            image_size=self._image_size,
+            path_list=self._val_list,
+            num_feature_pixels=self._num_feature_pixels,
+            num_target_pixels=self._num_target_pixels,
         )
-        self._test_dataset = ImageDataset(
-            image_size=self._image_size, path_list=self._test_list
+        self._test_dataset = RandomImageSampleDataset(
+            image_size=self._image_size,
+            path_list=self._test_list,
+            num_feature_pixels=self._num_feature_pixels,
+            num_target_pixels=self._num_target_pixels,
         )
 
     @property
@@ -166,6 +179,7 @@ class ImageDataModule(pl.LightningDataModule):
             shuffle=True,
             pin_memory=True,
             num_workers=self._num_workers,
+            collate_fn=random_image_sample_collate_fn,
         )
 
     def val_dataloader(self):
@@ -175,6 +189,7 @@ class ImageDataModule(pl.LightningDataModule):
             shuffle=False,
             pin_memory=True,
             num_workers=self._num_workers,
+            collate_fn=random_image_sample_collate_fn,
         )
 
     def test_dataloader(self):
@@ -184,4 +199,5 @@ class ImageDataModule(pl.LightningDataModule):
             shuffle=False,
             pin_memory=True,
             num_workers=self._num_workers,
+            collate_fn=random_image_sample_collate_fn,
         )
