@@ -92,20 +92,26 @@ def run_implicit_images(cfg: DictConfig):
         model = Net.load_from_checkpoint(checkpoint_path)
 
         image_samples = generate_sample(
+            model=model,
             features=cfg.num_feature_pixels,
             targets=cfg.num_target_pixels,
             rotations=cfg.rotations,
             image_size=cfg.image_size,
         )
 
-        image_samples = [(image.permute(1, 2, 0) + 1) * 256 for image in image_samples]
+        image_samples = [image.permute(1, 2, 0) for image in image_samples]
+        print(image_samples[0])
 
         size = len(image_samples)
-        width = math.sqrt(size)
+        width = int(math.sqrt(size))
+        height = width
+        if width * width < len(image_samples):
+            height += 1
 
-        f, axarr = plt.subplots(width, width)
+        f, axarr = plt.subplots(width, height)
+        axarr = axarr.flatten()
         for index, sample in enumerate(image_samples):
-            axarr[0].imshow(sample.detach().numpy())
+            axarr[index].imshow(sample.detach().numpy(), interpolation="none")
 
         plt.show()
 
