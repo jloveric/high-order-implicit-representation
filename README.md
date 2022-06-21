@@ -55,3 +55,7 @@ pixel value from these random samples.
 ```
 python examples/random_interpolation.py mlp.hidden.width=10 mlp.hidden.layers=2 mlp.n=3 mlp.periodicity=2.0 mlp.hidden.segments=2 mlp.input.segments=100 mlp.output.segments=2 batch_size=1
 ```
+and with an image folder
+```
+python examples/random_interpolation.py mlp.hidden.width=10 mlp.hidden.layers=2 mlp.n=3 mlp.periodicity=2.0 mlp.hidden.segments=2 mlp.input.segments=100 mlp.output.segments=2 batch_size=256 folder=/mnt/1000gb/celeba/img_align_celeba
+```

@@ -56,6 +56,9 @@ class RandomImageSampleDataset(Dataset):
 
         new_vals = torch.cat([val.unsqueeze(0) for val in self._stripe_list])
 
+        # rescale all these size they range from 0 to image_size
+        new_vals = new_vals / (0.5 * self._image_size)
+
         # Just stack the x, y... positions as additional channels
         ans = torch.cat([img, new_vals])
 
