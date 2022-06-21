@@ -32,3 +32,6 @@ batch_size: 256
 train: True
 checkpoint: null
 rotations: 1 # 1 is x,y, 2 is x,y, x-y, x+y, greater includes additional rotations
+
+defaults:
+  - optimizer: adam

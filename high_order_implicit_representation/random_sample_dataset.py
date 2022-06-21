@@ -85,7 +85,12 @@ class RandomImageSampleDataset(Dataset):
             examples, self._num_target_pixels, channels
         )
 
-        return features, targets
+        # We want all positions to be measured from the target and then
+        # we only want to predict the RGB component of the target, so
+        # This assumes these are RGB (3 channel images)
+        features[:, :, 3:] = features[:, :, 3:] - targets[:, :, 3:]
+
+        return features, targets[:, :, :3]  # only return RGB of target
 
 
 def random_image_sample_collate_fn(batch):
@@ -94,6 +99,7 @@ def random_image_sample_collate_fn(batch):
 
     features = torch.cat(feature_set)
     targets = torch.cat(target_set)
+
     return features, targets
 
 
