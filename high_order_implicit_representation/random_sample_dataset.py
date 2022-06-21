@@ -6,8 +6,9 @@ import torch
 import pytorch_lightning as pl
 from torchvision import transforms
 from PIL import Image
-from typing import List
+from typing import List, Tuple
 import logging
+from torch import Tensor
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class RandomImageSampleDataset(Dataset):
     def __len__(self):
         return len(self._paths)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> Tuple[Tensor, Tensor]:
         path = self._paths[index]
         img = Image.open(path)
 
