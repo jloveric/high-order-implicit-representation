@@ -24,7 +24,6 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     img = image.imread(filename)
 
     torch_image = torch.from_numpy(np.array(img))
-    print("image.shape", torch_image.shape)
     max_size = max(torch_image.shape[0], torch_image.shape[1])
 
     xv, yv = torch.meshgrid(
@@ -59,7 +58,6 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
         line_list = []
         for i in range(rotations):
             theta = (math.pi / 2.0) * (i / rotations)
-            print("theta", theta)
             rot_x = math.cos(theta)
             rot_y = math.sin(theta)
             rot_sum = math.fabs(rot_x) + math.fabs(rot_y)
@@ -74,7 +72,6 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
         # raise(f"Rotation {rotations} not implemented.")
 
     torch_image_flat = torch_image.reshape(-1, 3) * 2.0 / 255.0 - 1
-    print("torch_max", torch.max(torch_image_flat))
 
     return torch_image_flat, torch_position, torch_image
 
@@ -155,5 +152,4 @@ class ImageNeighborhoodReader:
         patch_block = (2.0 / 256.0) * torch.stack(patch_block) - 1
         patch_edge = (2.0 / 256.0) * torch.stack(patch_edge) - 1
 
-        print(patch_block, patch_edge)
         return patch_block, patch_edge, torch_image

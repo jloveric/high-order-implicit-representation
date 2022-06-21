@@ -6,10 +6,6 @@ from high_order_implicit_representation.single_image_dataset import (
 import torch
 
 
-def test_image_to_dataset():
-    result = RandomImageSampleDataset()
-
-
 def test_image_neighborhood_reader():
     ind = ImageNeighborhoodReader(filename="images/0000.jpg")
 
