@@ -20,6 +20,7 @@ from high_order_implicit_representation.random_sample_dataset import (
     RandomImageSampleDataModule,
 )
 import torch_optimizer as alt_optim
+from high_order_implicit_representation.utils import ImageSampler, generate_sample
 
 # from high_order_mlp import HighOrderMLP
 from high_order_implicit_representation.single_image_dataset import image_to_dataset
@@ -43,6 +44,13 @@ def run_implicit_images(cfg: DictConfig):
 
     if cfg.train is True:
 
+        image_sampler = ImageSampler(
+            features=cfg.num_feature_pixels,
+            targets=cfg.num_target_pixels,
+            rotations=cfg.rotations,
+            image_size=cfg.image_size,
+        )
+
         datamodule = RandomImageSampleDataModule(
             image_size=cfg.image_size,
             folder=cfg.folder,
@@ -58,7 +66,7 @@ def run_implicit_images(cfg: DictConfig):
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
         early_stopping = EarlyStopping(monitor="train_loss", patience=cfg.patience)
         trainer = Trainer(
-            callbacks=[early_stopping, lr_monitor],
+            callbacks=[early_stopping, lr_monitor, image_sampler],
             max_epochs=cfg.max_epochs,
             gpus=cfg.gpus,
             # gradient_clip_val=cfg.gradient_clip,
@@ -83,26 +91,22 @@ def run_implicit_images(cfg: DictConfig):
         logger.info("checkpoint_path {checkpoint_path}")
         model = Net.load_from_checkpoint(checkpoint_path)
 
-        model.eval()
-        image_dir = f"{hydra.utils.get_original_cwd()}/{cfg.images[0]}"
-        output, inputs, image = image_to_dataset(image_dir, rotations=cfg.rotations)
-        y_hat = model(inputs)
-        max_x = torch.max(inputs, dim=0)
-        max_y = torch.max(inputs, dim=1)
+        image_samples = generate_sample(
+            features=cfg.num_feature_pixels,
+            targets=cfg.num_target_pixels,
+            rotations=cfg.rotations,
+            image_size=cfg.image_size,
+        )
 
-        print("x_max", max_x, "y_max", max_y)
-        print("y_hat.shape", y_hat.shape)
-        print("image.shape", image.shape)
+        image_samples = [(image.permute(1, 2, 0) + 1) * 256 for image in image_samples]
 
-        ans = y_hat.reshape(image.shape[0], image.shape[1], image.shape[2])
-        ans = (ans + 1.0) / 2.0
+        size = len(image_samples)
+        width = math.sqrt(size)
 
-        f, axarr = plt.subplots(1, 2)
+        f, axarr = plt.subplots(width, width)
+        for index, sample in enumerate(image_samples):
+            axarr[0].imshow(sample.detach().numpy())
 
-        axarr[0].imshow(ans.detach().numpy())
-        axarr[0].set_title("fit")
-        axarr[1].imshow(image)
-        axarr[1].set_title("original")
         plt.show()
 
 

@@ -4,6 +4,9 @@ import logging
 from stripe_layers.StripeLayer import create_stripe_list
 import matplotlib.pyplot as plt
 from typing import List
+import pytorch_lightning as pl
+from pytorch_lightning.utilities.rank_zero import rank_zero_only
+from torchvision.utils import make_grid
 
 logger = logging.getLogger(__name__)
 
@@ -50,24 +53,27 @@ def generate_sample(
     stripe_list = create_stripe_list(
         width=image_size, height=image_size, device=device, rotations=rotations
     )
+
+    # These need to be normalized otherwise the max is the width of the grid
     new_vals = torch.cat([val.unsqueeze(0) for val in stripe_list]) / (0.5 * image_size)
 
     result_list = []
     for count in range(iterations):
         logger.info(f"Generating for count {count}")
-        ans = torch.cat([image, new_vals])
-        c, h, w = ans.shape
-        ans = ans.reshape(c, -1).permute(1, 0)
+
+        full_features = torch.cat([image, new_vals])
+        channels, h, w = full_features.shape
+        full_features = full_features.reshape(channels, -1).permute(1, 0)
 
         feature_indices = torch.remainder(
             torch.randperm(num_pixels * features), num_pixels
         )
         target_indices = torch.arange(0, num_pixels)
 
-        features_tensor = ans[feature_indices].reshape(-1, features, c)
-        targets_tensor = ans[target_indices].reshape(-1, 1, c)
+        features_tensor = full_features[feature_indices].reshape(-1, features, channels)
+        targets_tensor = full_features[target_indices].reshape(-1, 1, channels)
 
-        # Distances are measured relative to target
+        # Distances are measured relative to target so remove that component
         features_tensor[:, :, 3:] = features_tensor[:, :, 3:] - targets_tensor[:, :, 3:]
 
         result = model(features_tensor.flatten(1))
@@ -76,3 +82,52 @@ def generate_sample(
         result_list.append(image)
 
     return result_list
+
+
+class ImageSampler(pl.callbacks.Callback):
+    def __init__(
+        self,
+        batch_size: int = 36,
+        samples: int = 36,
+        features: int = 10,
+        targets: int = 1,
+        iterations: int = 10,
+        image_size: int = 64,
+        rotations: int = 2,
+    ) -> None:
+        super().__init__()
+        self._batch_size = batch_size
+        self._samples = samples
+        self._features = features
+        self._targets = targets
+        self._iterations = iterations
+        self._image_size = image_size
+        self._rotations = rotations
+
+    @rank_zero_only
+    def on_train_epoch_end(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ) -> None:
+        # pl_module.eval()
+
+        all_images_list = generate_sample(
+            model=pl_module,
+            features=self._features,
+            targets=self._targets,
+            iterations=self._iterations,
+            image_size=self._image_size,
+            rotations=self._rotations,
+            batch_size=self._batch_size,
+        )
+
+        all_images = torch.cat(all_images_list, dim=0)
+
+        # TODO: make sure this is denormalized properly
+        all_images = 0.5 * (all_images + 1)
+
+        img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
+
+        # PLOT IMAGES
+        trainer.logger.experiment.add_image(
+            "img", torch.tensor(img).permute(2, 0, 1), global_step=trainer.global_step
+        )
