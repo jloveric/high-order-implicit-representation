@@ -5,14 +5,14 @@ mlp:
   n_in: null
   n_out: null
   n_hidden: null
-  periodicity: null
+  periodicity: 2.0
   rescale_output: False
   scale: 2.0
   input:
-    segments: 1
+    segments: 100
     width: 70 # (rgb+rotations)*num_random_samples
   output:
-    segments: 1
+    segments: 2
     width: 3
   hidden:
     segments: 1

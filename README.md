@@ -59,3 +59,7 @@ and with an image folder
 ```
 python examples/random_interpolation.py mlp.hidden.width=10 mlp.hidden.layers=2 mlp.n=3 mlp.periodicity=2.0 mlp.hidden.segments=2 mlp.input.segments=100 mlp.output.segments=2 batch_size=256 folder=/mnt/1000gb/celeba/img_align_celeba
 ```
+and run evaluation
+```
+python examples/random_interpolation.py train=false checkpoint=\"outputs/2022-06-21/08-39-19/lightning_logs/version_0/checkpoints/epoch=49-step=19800.ckpt\"
+```
