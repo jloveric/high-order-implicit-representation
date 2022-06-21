@@ -2,7 +2,7 @@ from typing import Optional
 from pathlib import Path
 from stripe_layers.StripeLayer import create_stripe_list
 from torch.utils.data import DataLoader, Dataset, random_split
-
+import torch
 import pytorch_lightning as pl
 from torchvision import transforms
 from PIL import Image
@@ -17,17 +17,17 @@ class RandomImageSampleDataset(Dataset):
         self,
         image_size: int,
         path_list: List[str],
-        num_train_pixels: int = 25,
+        num_feature_pixels: int = 25,
         num_target_pixels: int = 1,
-        device="cuda",
+        device="cpu",
     ):
         super().__init__()
         self._image_size = image_size
         self._paths = path_list
-        self._num_train_pixels = num_train_pixels
+        self._num_feature_pixels = num_feature_pixels
         self._num_target_pixels = num_target_pixels
 
-        self.transform = transforms.Compose(
+        self._transform = transforms.Compose(
             [
                 transforms.Resize(image_size),
                 transforms.RandomHorizontalFlip(),
@@ -36,20 +36,65 @@ class RandomImageSampleDataset(Dataset):
             ]
         )
 
-        stripe_list = create_stripe_list(
+        self._stripe_list = create_stripe_list(
             width=image_size, height=image_size, device=device
         )
 
+        self._feature_fraction = num_feature_pixels / (
+            num_target_pixels + num_feature_pixels
+        )
+
     def __len__(self):
-        return len(self.paths)
+        return len(self._paths)
 
     def __getitem__(self, index):
-        path = self.paths[index]
+        path = self._paths[index]
         img = Image.open(path)
 
-        img = self.transform(img)
+        img = self._transform(img)
 
-        # Create an mapping
+        new_vals = torch.cat([val.unsqueeze(0) for val in self._stripe_list])
+
+        # Just stack the x, y... positions as additional channels
+        ans = torch.cat([img, new_vals])
+
+        c, h, w = ans.shape
+        ans = ans.reshape(c, -1).permute(1, 0)
+        size = ans.shape[0]
+        channels = ans.shape[1]
+
+        feature_size = int(self._feature_fraction * size)
+        feature_examples = feature_size // self._num_feature_pixels
+        target_examples = (size - feature_size) // self._num_target_pixels
+
+        examples = min(feature_examples, target_examples)
+
+        indices = torch.randperm(size)
+
+        # corrected size
+        feature_size = examples * self._num_feature_pixels
+        target_size = examples * self._num_target_pixels
+
+        feature_indices = indices[:feature_size]
+        target_indices = indices[feature_size : (feature_size + target_size)]
+
+        features = ans[feature_indices, :].reshape(
+            examples, self._num_feature_pixels, channels
+        )
+        targets = ans[target_indices, :].reshape(
+            examples, self._num_target_pixels, channels
+        )
+
+        return features, targets
+
+
+def random_image_sample_collate_fn(batch):
+    feature_set = [features for features, targets in batch]
+    target_set = [targets for features, targets in batch]
+
+    features = torch.cat(feature_set)
+    targets = torch.cat(target_set)
+    return features, targets
 
 
 class ImageDataModule(pl.LightningDataModule):
