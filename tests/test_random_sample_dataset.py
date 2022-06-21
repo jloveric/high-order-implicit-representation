@@ -29,11 +29,12 @@ def test_random_image_sample_dataset_specific():
     assert features.shape[0] == targets.shape[0] == 78
     assert features.shape[1] == num_feature_pixels
     assert targets.shape[1] == num_target_pixels
-    assert features.shape[2] == targets.shape[2]
+    assert features.shape[2] == 5
+    assert targets.shape[2] == 3
 
 
 @pytest.mark.parametrize("num_feature_pixels", [1, 3, 75])
-@pytest.mark.parametrize("num_target_pixels", [1, 3, 10])
+@pytest.mark.parametrize("num_target_pixels", [1])
 @pytest.mark.parametrize("batch_size", [1, 2])
 def test_random_image_sample_dataset(num_feature_pixels, num_target_pixels, batch_size):
 
@@ -55,7 +56,8 @@ def test_random_image_sample_dataset(num_feature_pixels, num_target_pixels, batc
     assert features.shape[0] == targets.shape[0]
     assert features.shape[1] == num_feature_pixels
     assert targets.shape[1] == num_target_pixels
-    assert features.shape[2] == targets.shape[2]
+    assert features.shape[2] == 5
+    assert targets.shape[2] == 3
 
 
 def test_random_image_sample_datamodule():
@@ -77,4 +79,5 @@ def test_random_image_sample_datamodule():
 
     assert features.shape[1] == 25
     assert targets.shape[1] == 1
-    assert features.shape[2] == targets.shape[2] == 5
+    assert features.shape[2] == 5
+    assert targets.shape[2] == 3

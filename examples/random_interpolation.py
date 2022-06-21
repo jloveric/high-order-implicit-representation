@@ -19,6 +19,7 @@ from pytorch_lightning.callbacks import EarlyStopping, LearningRateMonitor
 from high_order_implicit_representation.random_sample_dataset import (
     RandomImageSampleDataModule,
 )
+import torch_optimizer as alt_optim
 
 # from high_order_mlp import HighOrderMLP
 from high_order_implicit_representation.single_image_dataset import image_to_dataset
@@ -67,7 +68,48 @@ class Net(LightningModule):
         return loss
 
     def configure_optimizers(self):
-        return optim.Adam(self.parameters(), lr=self.cfg.lr)
+        if self.cfg.optimizer.name == "adahessian":
+            return alt_optim.Adahessian(
+                self.parameters(),
+                lr=self.cfg.optimizer.lr,
+                betas=self.cfg.optimizer.betas,
+                eps=self.cfg.optimizer.eps,
+                weight_decay=self.cfg.optimizer.weight_decay,
+                hessian_power=self.cfg.optimizer.hessian_power,
+            )
+        elif self.cfg.optimizer.name == "adam":
+
+            optimizer = optim.Adam(
+                params=self.parameters(),
+                lr=self.cfg.optimizer.lr,
+            )
+
+            reduce_on_plateau = False
+            if self.cfg.optimizer.scheduler == "plateau":
+                logger.info("Reducing lr on plateau")
+                lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer,
+                    patience=self.cfg.optimizer.patience,
+                    factor=self.cfg.optimizer.factor,
+                    verbose=True,
+                )
+                reduce_on_plateau = True
+            elif self.cfg.optimizer.scheduler == "exponential":
+                logger.info("Reducing lr exponentially")
+                lr_scheduler = optim.lr_scheduler.ExponentialLR(
+                    optimizer, gamma=self.cfg.optimizer.gamma
+                )
+            else:
+                return optimizer
+
+            scheduler = {
+                "scheduler": lr_scheduler,
+                "reduce_on_plateau": reduce_on_plateau,
+                "monitor": "train_loss",
+            }
+            return [optimizer], [scheduler]
+        else:
+            raise ValueError(f"Optimizer {self.cfg.optimizer.name} not recognized")
 
 
 @hydra.main(config_path="../config", config_name="random_interpolation")
@@ -99,11 +141,13 @@ def run_implicit_images(cfg: DictConfig):
         )
 
         trainer = Trainer(max_epochs=cfg.max_epochs, gpus=cfg.gpus)
+
         model = Net(cfg)
         trainer.fit(model, datamodule=datamodule)
 
         logger.info("testing")
         trainer.test(model, datamodule=datamodule)
+
         logger.info("finished testing")
         logger.info(f"best check_point {trainer.checkpoint_callback.best_model_path}")
     else:

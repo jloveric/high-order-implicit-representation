@@ -19,6 +19,7 @@ class RandomImageSampleDataset(Dataset):
         path_list: List[str],
         num_feature_pixels: int = 25,
         num_target_pixels: int = 1,
+        rotations: int = 1,
         device="cpu",
     ):
         super().__init__()
@@ -37,7 +38,7 @@ class RandomImageSampleDataset(Dataset):
         )
 
         self._stripe_list = create_stripe_list(
-            width=image_size, height=image_size, device=device
+            width=image_size, height=image_size, device=device, rotations=rotations
         )
 
         self._feature_fraction = num_feature_pixels / (
