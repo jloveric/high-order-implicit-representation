@@ -34,6 +34,8 @@ batch_size: 256
 train: True
 checkpoint: null
 rotations: 2 # 1 is x,y, 2 is x,y, x-y, x+y, greater includes additional rotations
+iterations: 100
+save_plots: false
 
 # early stopping patience
 patience: 10

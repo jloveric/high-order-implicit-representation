@@ -1,5 +1,5 @@
 from typing import List
-
+from pathlib import Path
 import os
 from omegaconf import DictConfig, OmegaConf
 import hydra
@@ -89,7 +89,7 @@ def run_implicit_images(cfg: DictConfig):
         # plot some data
         logger.info("evaluating result")
         logger.info(f"cfg.checkpoint {cfg.checkpoint}")
-        checkpoint_path = f"{hydra.utils.get_original_cwd()}/{cfg.checkpoint}"
+        checkpoint_path = f"{root_dir}/{cfg.checkpoint}"
         logger.info("checkpoint_path {checkpoint_path}")
         model = Net.load_from_checkpoint(checkpoint_path)
 
@@ -99,6 +99,7 @@ def run_implicit_images(cfg: DictConfig):
             targets=cfg.num_target_pixels,
             rotations=cfg.rotations,
             image_size=cfg.image_size,
+            iterations=cfg.iterations,
         )
 
         image_samples = [image.permute(1, 2, 0) for image in image_samples]
@@ -110,11 +111,25 @@ def run_implicit_images(cfg: DictConfig):
         if width * width < len(image_samples):
             height += 1
 
-        f, axarr = plt.subplots(width, height)
-        axarr = axarr.flatten()
+        f = plt.figure(figsize=(4, 4))  # Notice the equal aspect ratio
+        axarr = [f.add_subplot(width, height, i + 1) for i in range(len(image_samples))]
+        # f, axarr = plt.subplots(width, height, gridspec_kw={"wspace": 0, "hspace": 0})
+        # axarr = axarr.flatten()
         for index, sample in enumerate(image_samples):
             axarr[index].imshow(sample.detach().numpy(), interpolation="none")
+            axarr[index].axis("off")
+            axarr[index].set_aspect("equal")
 
+        f.subplots_adjust(wspace=0, hspace=0)
+
+        fname = (Path(root_dir) / "results" / "random_interpolation.png").as_posix()
+        if cfg.save_plots:
+            plt.savefig(
+                fname,
+                dpi="figure",
+            )
+
+        plt.axis("off")
         plt.show()
 
 
