@@ -1,7 +1,7 @@
 import torch
 from torch import Tensor
 import logging
-from stripe_layers.StripeLayer import create_stripe_list
+from high_order_layers_torch.utils import positions_from_mesh
 import matplotlib.pyplot as plt
 from typing import List
 import pytorch_lightning as pl
@@ -50,12 +50,16 @@ def generate_sample(
     else:
         image = (image / 256) * 2 - 1
 
-    stripe_list = create_stripe_list(
-        width=image_size, height=image_size, device=device, rotations=rotations
+    stripe_list = positions_from_mesh(
+        width=image_size,
+        height=image_size,
+        device=device,
+        rotations=rotations,
+        normalize=True,
     )
 
     # These need to be normalized otherwise the max is the width of the grid
-    new_vals = torch.cat([val.unsqueeze(0) for val in stripe_list]) / (0.5 * image_size)
+    new_vals = torch.cat([val.unsqueeze(0) for val in stripe_list])
 
     result_list = []
     for count in range(iterations):
@@ -108,8 +112,8 @@ class ImageSampler(pl.callbacks.Callback):
     def on_train_epoch_end(
         self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> None:
-        # pl_module.eval()
-
+        pl_module.eval()
+        logger.info("Generating sample")
         all_images_list = generate_sample(
             model=pl_module,
             features=self._features,
@@ -122,12 +126,11 @@ class ImageSampler(pl.callbacks.Callback):
 
         all_images = torch.cat(all_images_list, dim=0)
 
-        # TODO: make sure this is denormalized properly
         all_images = 0.5 * (all_images + 1)
 
         img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
 
-        # PLOT IMAGES
         trainer.logger.experiment.add_image(
             "img", torch.tensor(img).permute(2, 0, 1), global_step=trainer.global_step
         )
+        logger.info("Logged image")

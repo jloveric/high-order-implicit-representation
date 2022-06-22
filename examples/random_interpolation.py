@@ -19,6 +19,7 @@ from pytorch_lightning.callbacks import EarlyStopping, LearningRateMonitor
 from high_order_implicit_representation.random_sample_dataset import (
     RandomImageSampleDataModule,
 )
+from pytorch_lightning.loggers import TensorBoardLogger
 import torch_optimizer as alt_optim
 from high_order_implicit_representation.utils import ImageSampler, generate_sample
 
@@ -62,13 +63,14 @@ def run_implicit_images(cfg: DictConfig):
             root_dir=root_dir,
             rotations=cfg.rotations,
         )
-
+        tb_logger = TensorBoardLogger("tb_logs", name="diffusion")
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
         early_stopping = EarlyStopping(monitor="train_loss", patience=cfg.patience)
         trainer = Trainer(
             callbacks=[early_stopping, lr_monitor, image_sampler],
             max_epochs=cfg.max_epochs,
             gpus=cfg.gpus,
+            logger=tb_logger
             # gradient_clip_val=cfg.gradient_clip,
         )
 

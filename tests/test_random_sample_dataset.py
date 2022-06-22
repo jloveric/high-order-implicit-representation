@@ -26,6 +26,9 @@ def test_random_image_sample_dataset_specific():
 
     features, targets = this_iter.next()
 
+    print("features", features)
+    print("targets", targets)
+
     assert features.shape[0] == targets.shape[0] == 78
     assert features.shape[1] == num_feature_pixels
     assert targets.shape[1] == num_target_pixels

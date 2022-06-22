@@ -9,8 +9,8 @@ mlp:
   rescale_output: False
   scale: 2.0
   input:
-    segments: 100
-    width: 70 # (rgb+rotations)*num_random_samples
+    segments: ${image_size}
+    width: 224 # (rgb+rotations)*num_random_samples
   output:
     segments: 2
     width: 3
@@ -20,7 +20,7 @@ mlp:
     width: 10
 
 num_target_pixels: 1
-num_feature_pixels: 10
+num_feature_pixels: 32
 num_workers: 10
 split_frac: 0.5
 

@@ -1,6 +1,6 @@
 from typing import Optional
 from pathlib import Path
-from stripe_layers.StripeLayer import create_stripe_list
+from high_order_layers_torch.utils import positions_from_mesh
 from torch.utils.data import DataLoader, Dataset, random_split
 import torch
 import pytorch_lightning as pl
@@ -38,8 +38,12 @@ class RandomImageSampleDataset(Dataset):
             ]
         )
 
-        self._stripe_list = create_stripe_list(
-            width=image_size, height=image_size, device=device, rotations=rotations
+        self._stripe_list = positions_from_mesh(
+            width=image_size,
+            height=image_size,
+            device=device,
+            rotations=rotations,
+            normalize=True,
         )
 
         self._feature_fraction = num_feature_pixels / (
@@ -56,9 +60,6 @@ class RandomImageSampleDataset(Dataset):
         img = self._transform(img)
 
         new_vals = torch.cat([val.unsqueeze(0) for val in self._stripe_list])
-
-        # rescale all these size they range from 0 to image_size
-        new_vals = new_vals / (0.5 * self._image_size)
 
         # Just stack the x, y... positions as additional channels
         ans = torch.cat([img, new_vals])

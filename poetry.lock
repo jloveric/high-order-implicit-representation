@@ -308,7 +308,7 @@ protobuf = ["grpcio-tools (>=1.46.3)"]
 
 [[package]]
 name = "high-order-layers-torch"
-version = "1.1.9"
+version = "1.1.10"
 description = "High order layers in pytorch"
 category = "main"
 optional = false
@@ -1443,8 +1443,8 @@ grpcio = [
     {file = "grpcio-1.46.3.tar.gz", hash = "sha256:4b8fd8b1cd553635274b83cd984f0755e6779886eca53c1c71d48215962eb689"},
 ]
 high-order-layers-torch = [
-    {file = "high-order-layers-torch-1.1.9.tar.gz", hash = "sha256:73cafad7b85480546832d10edd10c82fb82bed3dc8d3c24419640c3e7ae26276"},
-    {file = "high_order_layers_torch-1.1.9-py3-none-any.whl", hash = "sha256:4244892fc9dbf59d22e1313a23d5bc9c04ab169e478a3f3d26efe928c0ac2a3e"},
+    {file = "high-order-layers-torch-1.1.10.tar.gz", hash = "sha256:68548f6b03319d5b8855e47b3505fa3a29347877bcbb6eea26cc31862f2373a9"},
+    {file = "high_order_layers_torch-1.1.10-py3-none-any.whl", hash = "sha256:82e638ded8207f7fee6b1cb087aa2f63b7dfba01bd8e8abbe390a4ea31f723e2"},
 ]
 hilbertcurve = [
     {file = "hilbertcurve-2.0.5-py3-none-any.whl", hash = "sha256:dbaad510237d3cd4355c189f00e8dbe66a9e66e03af37f9d3f257799292da363"},
