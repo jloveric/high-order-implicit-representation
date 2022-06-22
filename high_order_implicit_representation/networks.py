@@ -54,7 +54,6 @@ class Net(LightningModule):
         self.loss = nn.MSELoss()
 
     def forward(self, x):
-        print("x.shape", x.shape)
         return self.model(x)
 
     def eval_step(self, batch: Tensor, name: str):
