@@ -70,11 +70,8 @@ def run_implicit_images(cfg: DictConfig):
             callbacks=[early_stopping, lr_monitor, image_sampler],
             max_epochs=cfg.max_epochs,
             gpus=cfg.gpus,
-            logger=tb_logger
-            # gradient_clip_val=cfg.gradient_clip,
+            logger=tb_logger,
         )
-
-        trainer = Trainer(max_epochs=cfg.max_epochs, gpus=cfg.gpus)
 
         model = Net(cfg)
         trainer.fit(model, datamodule=datamodule)

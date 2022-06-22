@@ -112,7 +112,7 @@ class ImageSampler(pl.callbacks.Callback):
         self._image_size = image_size
         self._rotations = rotations
 
-    @rank_zero_only
+    # @rank_zero_only
     def on_train_epoch_end(
         self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> None:
