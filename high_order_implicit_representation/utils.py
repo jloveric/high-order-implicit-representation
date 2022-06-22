@@ -47,7 +47,7 @@ def generate_sample(
     model.eval()
 
     if image is None:
-        image = torch.rand([3, image_size, image_size]) * 2 - 1
+        image = torch.rand([3, image_size, image_size], device=device) * 2 - 1
     else:
         image = (image / 256) * 2 - 1
 
@@ -67,16 +67,16 @@ def generate_sample(
         logger.info(f"Generating for count {count}")
 
         if all_random is True:
-            image = torch.rand([3, image_size, image_size]) * 2 - 1
+            image = torch.rand([3, image_size, image_size], device=device) * 2 - 1
 
         full_features = torch.cat([image, new_vals])
         channels, h, w = full_features.shape
         full_features = full_features.reshape(channels, -1).permute(1, 0)
 
         feature_indices = torch.remainder(
-            torch.randperm(num_pixels * features), num_pixels
+            torch.randperm(num_pixels * features, device=device), num_pixels
         )
-        target_indices = torch.arange(0, num_pixels)
+        target_indices = torch.arange(start=0, end=num_pixels, device=device)
 
         features_tensor = full_features[feature_indices].reshape(-1, features, channels)
         targets_tensor = full_features[target_indices].reshape(-1, 1, channels)
@@ -126,9 +126,10 @@ class ImageSampler(pl.callbacks.Callback):
             image_size=self._image_size,
             rotations=self._rotations,
             batch_size=self._batch_size,
+            device=pl_module.device,
         )
 
-        all_images = torch.cat(all_images_list, dim=0)
+        all_images = torch.cat(all_images_list, dim=0).detach()
 
         all_images = 0.5 * (all_images + 1)
 
@@ -137,4 +138,5 @@ class ImageSampler(pl.callbacks.Callback):
         trainer.logger.experiment.add_image(
             "img", torch.tensor(img).permute(2, 0, 1), global_step=trainer.global_step
         )
+        # trainer.logger.experiment.add_image("img", img, global_step=trainer.global_step)
         logger.info("Logged image")
