@@ -10,7 +10,7 @@ mlp:
   scale: 2.0
   input:
     segments: ${image_size}
-    width: 224 # (rgb+rotations)*num_random_samples
+    width: 448 # (rgb+rotations)*num_random_samples
   output:
     segments: 2
     width: 3
@@ -20,11 +20,11 @@ mlp:
     width: 10
 
 num_target_pixels: 1
-num_feature_pixels: 32
+num_feature_pixels: 64
 num_workers: 10
 split_frac: 0.5
 
-image_size: 32
+image_size: 64
 
 max_epochs: 50
 gpus: 1
@@ -35,6 +35,7 @@ train: True
 checkpoint: null
 rotations: 2 # 1 is x,y, 2 is x,y, x-y, x+y, greater includes additional rotations
 iterations: 100
+all_random: False # Whether the plots should be based on the previous estimate or entirely random
 save_plots: false
 
 # early stopping patience

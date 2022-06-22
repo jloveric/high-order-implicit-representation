@@ -22,6 +22,7 @@ def generate_sample(
     device: str = "cpu",
     rotations: int = 2,
     batch_size: int = 256,
+    all_random: bool = True,
 ) -> List[Tensor]:
     """
     Create a sample either generated on top of a starting image
@@ -64,6 +65,9 @@ def generate_sample(
     result_list = []
     for count in range(iterations):
         logger.info(f"Generating for count {count}")
+
+        if all_random is True:
+            image = torch.rand([3, image_size, image_size]) * 2 - 1
 
         full_features = torch.cat([image, new_vals])
         channels, h, w = full_features.shape

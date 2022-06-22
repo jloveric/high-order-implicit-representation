@@ -63,6 +63,6 @@ and run evaluation
 ```
 python examples/random_interpolation.py train=false checkpoint=\"outputs/2022-06-21/08-39-19/lightning_logs/version_0/checkpoints/epoch=49-step=19800.ckpt\"
 ```
-Example generated image from celeba dataset.  This is a WIP as I try and figure out the right parameters to get this working.
+Example generated image from celeba dataset.  This is a WIP as I try and figure out the right parameters to get this working - currently suffering some mode collapse.
 
 ![Random interpolations for image generation](results/random_interpolation.png)

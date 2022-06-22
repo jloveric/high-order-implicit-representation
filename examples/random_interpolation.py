@@ -100,6 +100,7 @@ def run_implicit_images(cfg: DictConfig):
             rotations=cfg.rotations,
             image_size=cfg.image_size,
             iterations=cfg.iterations,
+            all_random=cfg.all_random,
         )
 
         image_samples = [image.permute(1, 2, 0) for image in image_samples]
