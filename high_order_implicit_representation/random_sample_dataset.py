@@ -24,6 +24,12 @@ class RandomImageSampleDataset(Dataset):
         rotations: int = 1,
         device="cpu",
     ):
+        """
+        Uniform random sample interpolation without overlap in either the
+        sample points or interpolation points.  I expect this to be replaced
+        by the radial sampler as this one produces too much noise in the results
+        since there is no bias towards the sample point.
+        """
         super().__init__()
         self._image_size = image_size
         self._paths = path_list
@@ -100,6 +106,85 @@ class RandomImageSampleDataset(Dataset):
         return features, targets[:, :, :3]  # only return RGB of target
 
 
+class RadialRandomImageSampleDataset(Dataset):
+    def __init__(
+        self,
+        image_size: int,
+        path_list: List[str],
+        num_feature_pixels: int = 25,
+        num_target_pixels: int = 1,
+        rotations: int = 1,
+        device="cpu",
+    ):
+        """
+        Sampling data along r, theta instead of uniform x,y
+        """
+        super().__init__()
+        self._image_size = image_size
+        self._paths = path_list
+        self._num_feature_pixels = num_feature_pixels
+        self._num_target_pixels = num_target_pixels
+
+        self._transform = transforms.Compose(
+            [
+                transforms.Resize(image_size),
+                transforms.RandomHorizontalFlip(),
+                transforms.CenterCrop(image_size),
+                transforms.ToTensor(),
+            ]
+        )
+
+        self._stripe_list = positions_from_mesh(
+            width=image_size,
+            height=image_size,
+            device=device,
+            rotations=rotations,
+            normalize=True,
+        )
+
+        xv, yv = torch.meshgrid([torch.arange(image_size), torch.arange(image_size)])
+        self._indices = (
+            torch.stack(xv, yv).permute(1, 2, 0).reshape(-1, 2).to(device=device)
+        )
+        self._target_linear_indices = self._indices[:, 0] + self._indices[:, 1] * self._image_size
+
+    def __len__(self):
+        return len(self._paths)
+
+    def __getitem__(self, index) -> Tuple[Tensor, Tensor]:
+        path = self._paths[index]
+        img = Image.open(path)
+
+        img = self._transform(img)
+
+        new_vals = torch.cat([val.unsqueeze(0) for val in self._stripe_list])
+
+        # Just stack the x, y... positions as additional channels
+        ans = torch.cat([img, new_vals])
+
+        c, h, w = ans.shape
+        ans = ans.reshape(c, -1).permute(1, 0)
+        size = ans.shape[0]
+        channels = ans.shape[1]
+
+        ij_indices = random_symmetric_sample(
+            image_size=self._image_size,
+            interp_size=self._num_feature_pixels,
+            samples=self._indices,
+        )
+
+        linear_indices = ij_indices[:, :, 0] + ij_indices[:, :, 1] * self._image_size
+        features = ans[linear_indices, :]
+        targets = ans[self._target_linear_indices,:]
+
+        # We want all positions to be measured from the target and then
+        # we only want to predict the RGB component of the target, so
+        # This assumes these are RGB (3 channel images)
+        features[:, :, 3:] = features[:, :, 3:] - targets[:, :, 3:]
+
+        return features, targets[:, :, :3]  # only return RGB of target
+
+
 def random_symmetric_sample(
     image_size: int, interp_size: int, samples: Tensor
 ) -> Tensor:
@@ -122,13 +207,13 @@ def random_symmetric_sample(
     x = (r * torch.cos(theta) * image_size).int()
     y = (r * torch.sin(theta) * image_size).int()
 
-    xy = torch.stack([x, y]).permute(2,1,0)
+    xy = torch.stack([x, y]).permute(2, 1, 0)
     xy = xy + samples
 
     # reflect all values that fall outside the boundary
-    xy = torch.where(xy > (image_size-1), 2 * (image_size-1) - xy, xy)
+    xy = torch.where(xy > (image_size - 1), 2 * (image_size - 1) - xy, xy)
     xy = torch.where(xy < 0, -xy, xy)
-    xy = xy.permute(1,0,2)
+    xy = xy.permute(1, 0, 2)
 
     return xy
 
