@@ -180,6 +180,7 @@ def random_radial_samples_from_image(
     feature_pixels: int,
     indices: Tensor,
     target_linear_indices: Tensor,
+    device="cpu",
 ):
     """
     Given an image, produce a list of random interpolations for every pixel
@@ -195,13 +196,12 @@ def random_radial_samples_from_image(
 
     c, h, w = ans.shape
     ans = ans.reshape(c, -1).permute(1, 0)
-    size = ans.shape[0]
-    channels = ans.shape[1]
 
     ij_indices = random_symmetric_sample(
         image_size=image_size,
         interp_size=feature_pixels,
         samples=indices,
+        device=device,
     )
 
     feature_linear_indices = ij_indices[:, :, 0] + ij_indices[:, :, 1] * image_size
@@ -219,7 +219,7 @@ def random_radial_samples_from_image(
 
 
 def random_symmetric_sample(
-    image_size: int, interp_size: int, samples: Tensor
+    image_size: int, interp_size: int, samples: Tensor, device="cpu"
 ) -> Tensor:
     """
     Create sample points that are computed with random r and theta.  This naturally
@@ -234,8 +234,8 @@ def random_symmetric_sample(
     num_samples = samples.shape[0]
 
     # r, theta
-    r = torch.rand(num_samples, interp_size)
-    theta = torch.rand(num_samples, interp_size) * 2 * math.pi
+    r = torch.rand(num_samples, interp_size, device=device)
+    theta = torch.rand(num_samples, interp_size, device=device) * 2 * math.pi
 
     x = (r * torch.cos(theta) * image_size).int()
     y = (r * torch.sin(theta) * image_size).int()

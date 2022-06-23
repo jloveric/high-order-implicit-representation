@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
 from torchvision.utils import make_grid
 import numpy as np
+from high_order_implicit_representation.random_sample_dataset import random_radial_samples_from_image, indices_from_grid
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,9 @@ def generate_sample_radial(
     )
 
     # These need to be normalized otherwise the max is the width of the grid
-    new_vals = torch.cat([val.unsqueeze(0) for val in stripe_list])
+    stripe_list = torch.cat([val.unsqueeze(0) for val in stripe_list])
+
+    indices, target_linear_indices = indices_from_grid(image_size, device=device)
 
     result_list = []
     for count in range(iterations):
@@ -70,20 +73,15 @@ def generate_sample_radial(
         if all_random is True:
             image = torch.rand([3, image_size, image_size], device=device) * 2 - 1
 
-        full_features = torch.cat([image, new_vals])
-        channels, h, w = full_features.shape
-        full_features = full_features.reshape(channels, -1).permute(1, 0)
-
-        feature_indices = torch.remainder(
-            torch.randperm(num_pixels * features, device=device), num_pixels
+        features_tensor, targets_tensor = random_radial_samples_from_image(
+            img=image,
+            stripe_list=stripe_list,
+            image_size=image_size,
+            feature_pixels=features,
+            indices=indices,
+            target_linear_indices=target_linear_indices,
+            device=device
         )
-        target_indices = torch.arange(start=0, end=num_pixels, device=device)
-
-        features_tensor = full_features[feature_indices].reshape(-1, features, channels)
-        targets_tensor = full_features[target_indices].reshape(-1, 1, channels)
-
-        # Distances are measured relative to target so remove that component
-        features_tensor[:, :, 3:] = features_tensor[:, :, 3:] - targets_tensor[:, :, 3:]
 
         result = model(features_tensor.flatten(1))
         image = result.reshape(image_size, image_size, 3).permute(2, 0, 1)
@@ -200,7 +198,7 @@ class ImageSampler(pl.callbacks.Callback):
     ) -> None:
         pl_module.eval()
         logger.info("Generating sample")
-        all_images_list = generate_sample(
+        all_images_list = generate_sample_radial(
             model=pl_module,
             features=self._features,
             targets=self._targets,
