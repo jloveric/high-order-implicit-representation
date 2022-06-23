@@ -144,7 +144,7 @@ class RadialRandomImageSampleDataset(Dataset):
 
         xv, yv = torch.meshgrid([torch.arange(image_size), torch.arange(image_size)])
         self._indices = (
-            torch.stack(xv, yv).permute(1, 2, 0).reshape(-1, 2).to(device=device)
+            torch.stack([xv, yv]).permute(1, 2, 0).reshape(-1, 2).to(device=device)
         )
         self._target_linear_indices = self._indices[:, 0] + self._indices[:, 1] * self._image_size
 
@@ -176,10 +176,13 @@ class RadialRandomImageSampleDataset(Dataset):
         linear_indices = ij_indices[:, :, 0] + ij_indices[:, :, 1] * self._image_size
         features = ans[linear_indices, :]
         targets = ans[self._target_linear_indices,:]
+        targets = targets.reshape(targets.shape[0],1,targets.shape[1])
 
         # We want all positions to be measured from the target and then
         # we only want to predict the RGB component of the target, so
         # This assumes these are RGB (3 channel images)
+        #print('features.shape', features.shape, 'targets.shape', targets.shape)
+
         features[:, :, 3:] = features[:, :, 3:] - targets[:, :, 3:]
 
         return features, targets[:, :, :3]  # only return RGB of target

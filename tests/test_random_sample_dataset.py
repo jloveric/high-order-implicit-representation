@@ -4,8 +4,34 @@ from high_order_implicit_representation.random_sample_dataset import (
     random_image_sample_collate_fn,
     RandomImageSampleDataModule,
     random_symmetric_sample,
+    RadialRandomImageSampleDataset
 )
 import torch
+
+def test_radial_random_image_sample_dataset_specific():
+    num_feature_pixels = 25
+    num_target_pixels = 1
+
+    dataset = RadialRandomImageSampleDataset(
+        image_size=32,
+        path_list=["images/0000.jpg", "images/jupiter.jpg"],
+        num_feature_pixels=num_feature_pixels,
+        num_target_pixels=num_target_pixels,
+    )
+
+    this_iter = iter(
+        torch.utils.data.DataLoader(
+            dataset, batch_size=3, collate_fn=random_image_sample_collate_fn
+        )
+    )
+
+    features, targets = this_iter.next()
+
+    assert features.shape[0] == targets.shape[0] == 2048
+    assert features.shape[1] == num_feature_pixels
+    assert targets.shape[1] == num_target_pixels
+    assert features.shape[2] == 5
+    assert targets.shape[2] == 3
 
 
 def test_random_symmetric_sample():
@@ -98,3 +124,4 @@ def test_random_image_sample_datamodule():
     assert targets.shape[1] == 1
     assert features.shape[2] == 5
     assert targets.shape[2] == 3
+
