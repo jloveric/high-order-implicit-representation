@@ -7,6 +7,7 @@ from typing import List
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
 from torchvision.utils import make_grid
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -129,14 +130,12 @@ class ImageSampler(pl.callbacks.Callback):
             device=pl_module.device,
         )
 
-        all_images = torch.cat(all_images_list, dim=0).detach()
-
+        all_images = torch.stack(all_images_list, dim=0).detach()
         all_images = 0.5 * (all_images + 1)
-
+        #all_images=torch.clamp(all_images, 0, 1)
+        
         img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
-
+        
         trainer.logger.experiment.add_image(
             "img", torch.tensor(img).permute(2, 0, 1), global_step=trainer.global_step
         )
-        # trainer.logger.experiment.add_image("img", img, global_step=trainer.global_step)
-        logger.info("Logged image")
