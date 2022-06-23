@@ -100,14 +100,6 @@ class RandomImageSampleDataset(Dataset):
         return features, targets[:, :, :3]  # only return RGB of target
 
 
-def make_periodic(x, periodicity: float):
-    xp = x + 0.5 * periodicity
-    xp = torch.remainder(xp, 2 * periodicity)  # always positive
-    xp = torch.where(xp > periodicity, 2 * periodicity - xp, xp)
-    xp = xp - 0.5 * periodicity
-    return xp
-
-
 def random_symmetric_sample(
     image_size: int, interp_size: int, samples: Tensor
 ) -> Tensor:
@@ -130,9 +122,7 @@ def random_symmetric_sample(
     x = (r * torch.cos(theta) * image_size).int()
     y = (r * torch.sin(theta) * image_size).int()
 
-    print('x.shape', x.shape, y.shape)
     xy = torch.stack([x, y]).permute(2,1,0)
-    print('xy.shape', xy.shape, 'samples.shape', samples.shape)
     xy = xy + samples
 
     # reflect all values that fall outside the boundary
