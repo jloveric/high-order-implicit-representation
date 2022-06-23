@@ -109,30 +109,36 @@ def make_periodic(x, periodicity: float):
 
 
 def random_symmetric_sample(
-    image_size: int, sample_size: int, samples: Tensor
+    image_size: int, interp_size: int, samples: Tensor
 ) -> Tensor:
     """
     Create sample points that are computed with random r and theta.  This naturally
     leads to a distribution that is lower density as the radius increases.
     Args :
+        image_size : Assumed square, width of image
+        sample_size : number of interpolation points
+        sample : number of samples
     Returns :
-        i,j grid indexes to use to use for each sample
+        i,j grid indexes to use to use for each sample [num_samples, sample_size, 2]
     """
     num_samples = samples.shape[0]
 
     # r, theta
-    r = torch.rand(num_samples, sample_size)
-    theta = torch.rand(num_samples, sample_size) * 2 * math.pi
+    r = torch.rand(num_samples, interp_size)
+    theta = torch.rand(num_samples, interp_size) * 2 * math.pi
 
     x = (r * torch.cos(theta) * image_size).int()
     y = (r * torch.sin(theta) * image_size).int()
 
-    xy = torch.cat([x, y])
+    print('x.shape', x.shape, y.shape)
+    xy = torch.stack([x, y]).permute(2,1,0)
+    print('xy.shape', xy.shape, 'samples.shape', samples.shape)
     xy = xy + samples
 
     # reflect all values that fall outside the boundary
-    xy = torch.where(xy >= sample_size, 2 * sample_size - xy, xy)
+    xy = torch.where(xy > (image_size-1), 2 * (image_size-1) - xy, xy)
     xy = torch.where(xy < 0, -xy, xy)
+    xy = xy.permute(1,0,2)
 
     return xy
 

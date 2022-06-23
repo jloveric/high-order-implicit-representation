@@ -3,8 +3,22 @@ from high_order_implicit_representation.random_sample_dataset import (
     RandomImageSampleDataset,
     random_image_sample_collate_fn,
     RandomImageSampleDataModule,
+    random_symmetric_sample,
 )
 import torch
+
+
+def test_random_symmetric_sample():
+
+    samples = torch.tensor([[5, 5], [0, 0], [10, 0], [0, 10], [10, 10]])
+    image_size = 11
+    interp_size = 5
+    result = random_symmetric_sample(
+        image_size=image_size, interp_size=interp_size, samples=samples
+    )
+
+    assert torch.all(result < image_size).tolist() is True
+    assert torch.all(result >= 0).tolist() is True
 
 
 def test_random_image_sample_dataset_specific():
