@@ -106,6 +106,13 @@ class RandomImageSampleDataset(Dataset):
         return features, targets[:, :, :3]  # only return RGB of target
 
 
+def indices_from_grid(image_size: int, device):
+    xv, yv = torch.meshgrid([torch.arange(image_size), torch.arange(image_size)])
+    indices = torch.stack([xv, yv]).permute(1, 2, 0).reshape(-1, 2).to(device=device)
+    linear_indices = indices[:, 0] + indices[:, 1] * image_size
+    return indices, linear_indices
+
+
 class RadialRandomImageSampleDataset(Dataset):
     def __init__(
         self,
@@ -141,13 +148,10 @@ class RadialRandomImageSampleDataset(Dataset):
             rotations=rotations,
             normalize=True,
         )
+        self._stripe_list = torch.cat([val.unsqueeze(0) for val in self._stripe_list])
 
-        xv, yv = torch.meshgrid([torch.arange(image_size), torch.arange(image_size)])
-        self._indices = (
-            torch.stack([xv, yv]).permute(1, 2, 0).reshape(-1, 2).to(device=device)
-        )
-        self._target_linear_indices = (
-            self._indices[:, 0] + self._indices[:, 1] * self._image_size
+        self._indices, self._target_linear_indices = indices_from_grid(
+            image_size, device=device
         )
 
     def __len__(self):
@@ -159,34 +163,59 @@ class RadialRandomImageSampleDataset(Dataset):
 
         img = self._transform(img)
 
-        new_vals = torch.cat([val.unsqueeze(0) for val in self._stripe_list])
-
-        # Just stack the x, y... positions as additional channels
-        ans = torch.cat([img, new_vals])
-
-        c, h, w = ans.shape
-        ans = ans.reshape(c, -1).permute(1, 0)
-        size = ans.shape[0]
-        channels = ans.shape[1]
-
-        ij_indices = random_symmetric_sample(
+        return random_radial_samples_from_image(
+            img=img,
+            stripe_list=self._stripe_list,
             image_size=self._image_size,
-            interp_size=self._num_feature_pixels,
-            samples=self._indices,
+            feature_pixels=self._num_feature_pixels,
+            indices=self._indices,
+            target_linear_indices=self._target_linear_indices,
         )
 
-        linear_indices = ij_indices[:, :, 0] + ij_indices[:, :, 1] * self._image_size
-        features = ans[linear_indices, :]
-        targets = ans[self._target_linear_indices, :]
-        targets = targets.reshape(targets.shape[0], 1, targets.shape[1])
 
-        # We want all positions to be measured from the target and then
-        # we only want to predict the RGB component of the target, so
-        # This assumes these are RGB (3 channel images)
+def random_radial_samples_from_image(
+    img: Tensor,
+    stripe_list: Tensor,
+    image_size: int,
+    feature_pixels: int,
+    indices: Tensor,
+    target_linear_indices: Tensor,
+):
+    """
+    Given an image, produce a list of random interpolations for every pixel
+    in the image. The image is reflected at all boundaries and interpolations
+    that go beyond the image ranges use the reflected values.
+    Args :
+        indices : 2d sample indexes [[0,0],[0,1],...]
+        target_linear_indices : flattened indexes [0...image_size*image_size-1]
+    """
 
-        features[:, :, 3:] = features[:, :, 3:] - targets[:, :, 3:]
+    # Just stack the x, y... positions as additional channels
+    ans = torch.cat([img, stripe_list])
 
-        return features, targets[:, :, :3]  # only return RGB of target
+    c, h, w = ans.shape
+    ans = ans.reshape(c, -1).permute(1, 0)
+    size = ans.shape[0]
+    channels = ans.shape[1]
+
+    ij_indices = random_symmetric_sample(
+        image_size=image_size,
+        interp_size=feature_pixels,
+        samples=indices,
+    )
+
+    feature_linear_indices = ij_indices[:, :, 0] + ij_indices[:, :, 1] * image_size
+    features = ans[feature_linear_indices, :]
+    targets = ans[target_linear_indices, :]
+    targets = targets.reshape(targets.shape[0], 1, targets.shape[1])
+
+    # We want all positions to be measured from the target and then
+    # we only want to predict the RGB component of the target, so
+    # This assumes these are RGB (3 channel images)
+
+    features[:, :, 3:] = features[:, :, 3:] - targets[:, :, 3:]
+
+    return features, targets[:, :, :3]  # only return RGB of target
 
 
 def random_symmetric_sample(

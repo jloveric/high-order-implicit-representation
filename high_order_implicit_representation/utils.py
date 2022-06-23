@@ -12,6 +12,87 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
+def generate_sample_radial(
+    model: torch.nn,
+    features: int = 10,
+    targets: int = 1,
+    iterations: int = 10,
+    image: Tensor = None,
+    image_size: int = 64,
+    return_intermediate: bool = True,
+    device: str = "cpu",
+    rotations: int = 2,
+    batch_size: int = 256,
+    all_random: bool = True,
+) -> List[Tensor]:
+    """
+    Create a sample either generated on top of a starting image
+    or from a random image. Return a series of images with the
+    for each time the network is applied.
+    Args :
+      model : The nn model
+      features : The number of points used for interpolation
+      targets : The number of target points where RGB will be predicted
+      iterations : Number of times to apply the network to the image
+      image : An unnormalized image to use as the initial value
+      image_size : The width of the image (assumed square)
+      return_intermediate : Return intermediate values if true
+      device : The device to perform operations on
+      rotations : The number of rotations used by the network
+      batch_size : Set the batch size to run through the network
+    Returns :
+      A list of images for each time the network is applied
+    """
+
+    num_pixels = image_size * image_size
+    model.eval()
+
+    if image is None:
+        image = torch.rand([3, image_size, image_size], device=device) * 2 - 1
+    else:
+        image = (image / 256) * 2 - 1
+
+    stripe_list = positions_from_mesh(
+        width=image_size,
+        height=image_size,
+        device=device,
+        rotations=rotations,
+        normalize=True,
+    )
+
+    # These need to be normalized otherwise the max is the width of the grid
+    new_vals = torch.cat([val.unsqueeze(0) for val in stripe_list])
+
+    result_list = []
+    for count in range(iterations):
+        logger.info(f"Generating for count {count}")
+
+        if all_random is True:
+            image = torch.rand([3, image_size, image_size], device=device) * 2 - 1
+
+        full_features = torch.cat([image, new_vals])
+        channels, h, w = full_features.shape
+        full_features = full_features.reshape(channels, -1).permute(1, 0)
+
+        feature_indices = torch.remainder(
+            torch.randperm(num_pixels * features, device=device), num_pixels
+        )
+        target_indices = torch.arange(start=0, end=num_pixels, device=device)
+
+        features_tensor = full_features[feature_indices].reshape(-1, features, channels)
+        targets_tensor = full_features[target_indices].reshape(-1, 1, channels)
+
+        # Distances are measured relative to target so remove that component
+        features_tensor[:, :, 3:] = features_tensor[:, :, 3:] - targets_tensor[:, :, 3:]
+
+        result = model(features_tensor.flatten(1))
+        image = result.reshape(image_size, image_size, 3).permute(2, 0, 1)
+
+        result_list.append(image)
+
+    return result_list
+
+
 def generate_sample(
     model: torch.nn,
     features: int = 10,
