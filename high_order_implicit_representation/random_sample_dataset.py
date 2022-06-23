@@ -9,6 +9,7 @@ from PIL import Image
 from typing import List, Tuple
 import logging
 from torch import Tensor
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +98,43 @@ class RandomImageSampleDataset(Dataset):
         features[:, :, 3:] = features[:, :, 3:] - targets[:, :, 3:]
 
         return features, targets[:, :, :3]  # only return RGB of target
+
+
+def make_periodic(x, periodicity: float):
+    xp = x + 0.5 * periodicity
+    xp = torch.remainder(xp, 2 * periodicity)  # always positive
+    xp = torch.where(xp > periodicity, 2 * periodicity - xp, xp)
+    xp = xp - 0.5 * periodicity
+    return xp
+
+
+def random_symmetric_sample(
+    image_size: int, sample_size: int, samples: Tensor
+) -> Tensor:
+    """
+    Create sample points that are computed with random r and theta.  This naturally
+    leads to a distribution that is lower density as the radius increases.
+    Args :
+    Returns :
+        i,j grid indexes to use to use for each sample
+    """
+    num_samples = samples.shape[0]
+
+    # r, theta
+    r = torch.rand(num_samples, sample_size)
+    theta = torch.rand(num_samples, sample_size) * 2 * math.pi
+
+    x = (r * torch.cos(theta) * image_size).int()
+    y = (r * torch.sin(theta) * image_size).int()
+
+    xy = torch.cat([x, y])
+    xy = xy + samples
+
+    # reflect all values that fall outside the boundary
+    xy = torch.where(xy >= sample_size, 2 * sample_size - xy, xy)
+    xy = torch.where(xy < 0, -xy, xy)
+
+    return xy
 
 
 def random_image_sample_collate_fn(batch):
