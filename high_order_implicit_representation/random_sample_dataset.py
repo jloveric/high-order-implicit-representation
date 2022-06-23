@@ -146,7 +146,9 @@ class RadialRandomImageSampleDataset(Dataset):
         self._indices = (
             torch.stack([xv, yv]).permute(1, 2, 0).reshape(-1, 2).to(device=device)
         )
-        self._target_linear_indices = self._indices[:, 0] + self._indices[:, 1] * self._image_size
+        self._target_linear_indices = (
+            self._indices[:, 0] + self._indices[:, 1] * self._image_size
+        )
 
     def __len__(self):
         return len(self._paths)
@@ -175,13 +177,12 @@ class RadialRandomImageSampleDataset(Dataset):
 
         linear_indices = ij_indices[:, :, 0] + ij_indices[:, :, 1] * self._image_size
         features = ans[linear_indices, :]
-        targets = ans[self._target_linear_indices,:]
-        targets = targets.reshape(targets.shape[0],1,targets.shape[1])
+        targets = ans[self._target_linear_indices, :]
+        targets = targets.reshape(targets.shape[0], 1, targets.shape[1])
 
         # We want all positions to be measured from the target and then
         # we only want to predict the RGB component of the target, so
         # This assumes these are RGB (3 channel images)
-        #print('features.shape', features.shape, 'targets.shape', targets.shape)
 
         features[:, :, 3:] = features[:, :, 3:] - targets[:, :, 3:]
 
@@ -244,6 +245,7 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
         split_frac: float = 0.8,
         root_dir: str = ".",
         rotations: int = 1,
+        dataset: Dataset = RadialRandomImageSampleDataset,
     ):
         super().__init__()
         self._image_size = image_size
@@ -256,6 +258,7 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
         self._split_frac = split_frac
         self._root_dir = root_dir
         self._rotations = rotations
+        self._dataset = dataset
 
     def setup(self, stage: Optional[str] = None):
 
@@ -280,7 +283,7 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
             list(val) for val in random_split(paths, [train_size, test_size, val_size])
         ]
 
-        self._train_dataset = RandomImageSampleDataset(
+        self._train_dataset = self._dataset(
             image_size=self._image_size,
             path_list=self._train_list,
             num_feature_pixels=self._num_feature_pixels,
@@ -288,14 +291,14 @@ class RandomImageSampleDataModule(pl.LightningDataModule):
             rotations=self._rotations,
         )
 
-        self._val_dataset = RandomImageSampleDataset(
+        self._val_dataset = self._dataset(
             image_size=self._image_size,
             path_list=self._val_list,
             num_feature_pixels=self._num_feature_pixels,
             num_target_pixels=self._num_target_pixels,
             rotations=self._rotations,
         )
-        self._test_dataset = RandomImageSampleDataset(
+        self._test_dataset = self._dataset(
             image_size=self._image_size,
             path_list=self._test_list,
             num_feature_pixels=self._num_feature_pixels,
