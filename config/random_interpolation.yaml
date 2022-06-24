@@ -10,17 +10,17 @@ mlp:
   scale: 2.0
   input:
     segments: ${image_size}
-    width: 448 # (rgb+rotations)*num_random_samples
+    width: 224 # (rgb+rotations)*num_random_samples
   output:
     segments: 2
     width: 3
   hidden:
-    segments: 1
+    segments: 2
     layers: 2
     width: 10
 
 num_target_pixels: 1
-num_feature_pixels: 64
+num_feature_pixels: 32
 num_workers: 10
 split_frac: 0.5
 

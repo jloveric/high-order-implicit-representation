@@ -26,7 +26,8 @@ def test_radial_random_image_sample_dataset_specific():
     )
 
     features, targets = this_iter.next()
-
+    print('features', features)
+    print('targets', targets)
     assert features.shape[0] == targets.shape[0] == 2048
     assert features.shape[1] == num_feature_pixels
     assert targets.shape[1] == num_target_pixels
@@ -42,7 +43,7 @@ def test_random_symmetric_sample():
     result = random_symmetric_sample(
         image_size=image_size, interp_size=interp_size, samples=samples
     )
-
+    print('result', result)
     assert torch.all(result < image_size).tolist() is True
     assert torch.all(result >= 0).tolist() is True
 
@@ -124,4 +125,5 @@ def test_random_image_sample_datamodule():
     assert targets.shape[1] == 1
     assert features.shape[2] == 5
     assert targets.shape[2] == 3
+
 

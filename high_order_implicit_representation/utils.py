@@ -51,7 +51,7 @@ def generate_sample_radial(
     if image is None:
         image = torch.rand([3, image_size, image_size], device=device) * 2 - 1
     else:
-        image = (image / 256) * 2 - 1
+        image = (image / 255) * 2 - 1
 
     stripe_list = positions_from_mesh(
         width=image_size,
@@ -129,7 +129,7 @@ def generate_sample(
     if image is None:
         image = torch.rand([3, image_size, image_size], device=device) * 2 - 1
     else:
-        image = (image / 256) * 2 - 1
+        image = (image / 255) * 2 - 1
 
     stripe_list = positions_from_mesh(
         width=image_size,

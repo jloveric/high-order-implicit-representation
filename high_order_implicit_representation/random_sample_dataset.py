@@ -42,6 +42,7 @@ class RandomImageSampleDataset(Dataset):
                 transforms.RandomHorizontalFlip(),
                 transforms.CenterCrop(image_size),
                 transforms.ToTensor(),
+                transforms.Normalize(mean=0.5, std=0.5)
             ]
         )
 
@@ -138,6 +139,7 @@ class RadialRandomImageSampleDataset(Dataset):
                 transforms.RandomHorizontalFlip(),
                 transforms.CenterCrop(image_size),
                 transforms.ToTensor(),
+                transforms.Normalize(mean=0.5, std=0.5)
             ]
         )
 
@@ -237,8 +239,10 @@ def random_symmetric_sample(
     r = torch.rand(num_samples, interp_size, device=device)
     theta = torch.rand(num_samples, interp_size, device=device) * 2 * math.pi
 
-    x = (r * torch.cos(theta) * image_size).int()
-    y = (r * torch.sin(theta) * image_size).int()
+    # a pixel at the center should sample the edge but
+    # not further.
+    x = (0.5*r * torch.cos(theta) * image_size).int()
+    y = (0.5*r * torch.sin(theta) * image_size).int()
 
     xy = torch.stack([x, y]).permute(2, 1, 0)
     xy = xy + samples
