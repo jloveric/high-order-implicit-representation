@@ -17,7 +17,7 @@ mlp:
   hidden:
     segments: 2
     layers: 2
-    width: 10
+    width: 100
 
 num_target_pixels: 1
 num_feature_pixels: 32
@@ -35,7 +35,7 @@ train: True
 checkpoint: null
 rotations: 2 # 1 is x,y, 2 is x,y, x-y, x+y, greater includes additional rotations
 iterations: 100
-all_random: False # Whether the plots should be based on the previous estimate or entirely random
+all_random: true # Whether the plots should be based on the previous estimate or entirely random
 save_plots: false
 
 # early stopping patience
