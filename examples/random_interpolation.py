@@ -28,6 +28,8 @@ from high_order_implicit_representation.single_image_dataset import image_to_dat
 from torch.utils.data import DataLoader, Dataset
 import logging
 from high_order_implicit_representation.networks import Net
+import matplotlib 
+#matplotlib.use('TkAgg')
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -100,7 +102,7 @@ def run_implicit_images(cfg: DictConfig):
             all_random=cfg.all_random,
         )
 
-        image_samples = [image.permute(1, 2, 0) for image in image_samples]
+        image_samples = [0.5*(image.permute(1, 2, 0)+1) for image in image_samples]
         print(image_samples[0])
 
         size = len(image_samples)

@@ -211,7 +211,7 @@ class ImageSampler(pl.callbacks.Callback):
 
         all_images = torch.stack(all_images_list, dim=0).detach()
         all_images = 0.5 * (all_images + 1)
-
+        
         img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
 
         trainer.logger.experiment.add_image(

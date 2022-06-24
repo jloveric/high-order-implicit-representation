@@ -162,9 +162,7 @@ class RadialRandomImageSampleDataset(Dataset):
     def __getitem__(self, index) -> Tuple[Tensor, Tensor]:
         path = self._paths[index]
         img = Image.open(path)
-
         img = self._transform(img)
-
         return random_radial_samples_from_image(
             img=img,
             stripe_list=self._stripe_list,
@@ -214,7 +212,7 @@ def random_radial_samples_from_image(
     # We want all positions to be measured from the target and then
     # we only want to predict the RGB component of the target, so
     # This assumes these are RGB (3 channel images)
-
+    # The maximum diff here should be +-0.5
     features[:, :, 3:] = features[:, :, 3:] - targets[:, :, 3:]
 
     return features, targets[:, :, :3]  # only return RGB of target
