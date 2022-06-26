@@ -40,6 +40,6 @@ save_plots: false
 
 # early stopping patience
 patience: 10
-
+image: images/mountains.jpg
 defaults:
   - optimizer: adam

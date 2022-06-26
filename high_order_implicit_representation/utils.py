@@ -8,7 +8,11 @@ import pytorch_lightning as pl
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
 from torchvision.utils import make_grid
 import numpy as np
-from high_order_implicit_representation.random_sample_dataset import random_radial_samples_from_image, indices_from_grid
+from high_order_implicit_representation.random_sample_dataset import (
+    random_radial_samples_from_image,
+    indices_from_grid,
+)
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +22,7 @@ def generate_sample_radial(
     features: int = 10,
     targets: int = 1,
     iterations: int = 10,
-    image: Tensor = None,
+    start_image: Tensor = None,
     image_size: int = 64,
     return_intermediate: bool = True,
     device: str = "cpu",
@@ -35,7 +39,7 @@ def generate_sample_radial(
       features : The number of points used for interpolation
       targets : The number of target points where RGB will be predicted
       iterations : Number of times to apply the network to the image
-      image : An unnormalized image to use as the initial value
+      start_image : An normalized image to use as the initial value in range [-1, 1]
       image_size : The width of the image (assumed square)
       return_intermediate : Return intermediate values if true
       device : The device to perform operations on
@@ -48,10 +52,10 @@ def generate_sample_radial(
     num_pixels = image_size * image_size
     model.eval()
 
-    if image is None:
+    if start_image is None:
         image = torch.rand([3, image_size, image_size], device=device) * 2 - 1
     else:
-        image = (image / 255) * 2 - 1
+        image = copy.deepcopy(start_image)
 
     stripe_list = positions_from_mesh(
         width=image_size,
@@ -70,8 +74,10 @@ def generate_sample_radial(
     for count in range(iterations):
         logger.info(f"Generating for count {count}")
 
-        if all_random is True:
+        if all_random is True and start_image is None:
             image = torch.rand([3, image_size, image_size], device=device) * 2 - 1
+        elif all_random is True and start_image is not None:
+            image = copy.deepcopy(start_image)
 
         features_tensor, targets_tensor = random_radial_samples_from_image(
             img=image,
@@ -80,7 +86,7 @@ def generate_sample_radial(
             feature_pixels=features,
             indices=indices,
             target_linear_indices=target_linear_indices,
-            device=device
+            device=device,
         )
 
         result = model(features_tensor.flatten(1))
@@ -211,7 +217,7 @@ class ImageSampler(pl.callbacks.Callback):
 
         all_images = torch.stack(all_images_list, dim=0).detach()
         all_images = 0.5 * (all_images + 1)
-        
+
         img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
 
         trainer.logger.experiment.add_image(

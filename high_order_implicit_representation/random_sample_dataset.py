@@ -14,6 +14,29 @@ import math
 logger = logging.getLogger(__name__)
 
 
+def indices_from_grid(image_size: int, device):
+    xv, yv = torch.meshgrid([torch.arange(image_size), torch.arange(image_size)])
+    indices = torch.stack([xv, yv]).permute(1, 2, 0).reshape(-1, 2).to(device=device)
+    linear_indices = indices[:, 0] + indices[:, 1] * image_size
+    return indices, linear_indices
+
+
+def standard_transforms(image_size: int, mean: float = 0.5, std: float = 0.5):
+    """
+    Transform and image and normalize while converting to pytorch tensor.
+    """
+    transform = transforms.Compose(
+        [
+            transforms.Resize(image_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.CenterCrop(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std),
+        ]
+    )
+    return transform
+
+
 class RandomImageSampleDataset(Dataset):
     def __init__(
         self,
@@ -36,15 +59,7 @@ class RandomImageSampleDataset(Dataset):
         self._num_feature_pixels = num_feature_pixels
         self._num_target_pixels = num_target_pixels
 
-        self._transform = transforms.Compose(
-            [
-                transforms.Resize(image_size),
-                transforms.RandomHorizontalFlip(),
-                transforms.CenterCrop(image_size),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=0.5, std=0.5),
-            ]
-        )
+        self._transform = standard_transforms(image_size=image_size)
 
         self._stripe_list = positions_from_mesh(
             width=image_size,
@@ -107,13 +122,6 @@ class RandomImageSampleDataset(Dataset):
         return features, targets[:, :, :3]  # only return RGB of target
 
 
-def indices_from_grid(image_size: int, device):
-    xv, yv = torch.meshgrid([torch.arange(image_size), torch.arange(image_size)])
-    indices = torch.stack([xv, yv]).permute(1, 2, 0).reshape(-1, 2).to(device=device)
-    linear_indices = indices[:, 0] + indices[:, 1] * image_size
-    return indices, linear_indices
-
-
 class RadialRandomImageSampleDataset(Dataset):
     def __init__(
         self,
@@ -133,15 +141,7 @@ class RadialRandomImageSampleDataset(Dataset):
         self._num_feature_pixels = num_feature_pixels
         self._num_target_pixels = num_target_pixels
 
-        self._transform = transforms.Compose(
-            [
-                transforms.Resize(image_size),
-                transforms.RandomHorizontalFlip(),
-                transforms.CenterCrop(image_size),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=0.5, std=0.5),
-            ]
-        )
+        self._transform = standard_transforms(image_size=image_size)
 
         self._stripe_list = positions_from_mesh(
             width=image_size,
