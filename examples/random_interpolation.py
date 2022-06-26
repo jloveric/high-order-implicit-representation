@@ -21,15 +21,18 @@ from high_order_implicit_representation.random_sample_dataset import (
 )
 from pytorch_lightning.loggers import TensorBoardLogger
 import torch_optimizer as alt_optim
-from high_order_implicit_representation.utils import ImageSampler, generate_sample
+from high_order_implicit_representation.utils import (
+    ImageSampler,
+    generate_sample,
+    generate_sample_radial,
+)
 
 # from high_order_mlp import HighOrderMLP
 from high_order_implicit_representation.single_image_dataset import image_to_dataset
 from torch.utils.data import DataLoader, Dataset
 import logging
 from high_order_implicit_representation.networks import Net
-import matplotlib 
-#matplotlib.use('TkAgg')
+import matplotlib
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -92,7 +95,7 @@ def run_implicit_images(cfg: DictConfig):
         logger.info("checkpoint_path {checkpoint_path}")
         model = Net.load_from_checkpoint(checkpoint_path)
 
-        image_samples = generate_sample(
+        image_samples = generate_sample_radial(
             model=model,
             features=cfg.num_feature_pixels,
             targets=cfg.num_target_pixels,
@@ -102,7 +105,7 @@ def run_implicit_images(cfg: DictConfig):
             all_random=cfg.all_random,
         )
 
-        image_samples = [0.5*(image.permute(1, 2, 0)+1) for image in image_samples]
+        image_samples = [0.5 * (image.permute(1, 2, 0) + 1) for image in image_samples]
         print(image_samples[0])
 
         size = len(image_samples)
