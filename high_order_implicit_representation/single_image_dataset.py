@@ -111,7 +111,6 @@ class ImageNeighborhoodReader:
         Return :
             tensor of inner block, tensor of neighborhood
         """
-        print("filename", filename, flush=True)
         img = image.imread(filename)
 
         torch_image = torch.from_numpy(np.array(img))
@@ -149,7 +148,7 @@ class ImageNeighborhoodReader:
                 patch_edge.append(edge)
                 patch_block.append(patch)
 
-        patch_block = (2.0 / 256.0) * torch.stack(patch_block) - 1
-        patch_edge = (2.0 / 256.0) * torch.stack(patch_edge) - 1
+        patch_block = (2.0 / 255.0) * torch.stack(patch_block) - 1
+        patch_edge = (2.0 / 255.0) * torch.stack(patch_edge) - 1
 
         return patch_block, patch_edge, torch_image

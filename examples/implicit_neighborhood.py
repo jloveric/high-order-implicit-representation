@@ -30,7 +30,8 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 class ImageNeighborhoodDataset(Dataset):
     def __init__(self, filenames: List[str], width: int = 3, outside: int = 1):
-        ind = ImageNeighborhoodReader(filenames, width=width, outside=outside)
+        # TODO: right now grabbing the first element
+        ind = ImageNeighborhoodReader(filenames[0], width=width, outside=outside)
         self.inputs = ind.features
         self.output = ind.targets
         self.image = ind.image
@@ -45,7 +46,7 @@ class ImageNeighborhoodDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        return self.input[idx], self.output[idx]
+        return self.inputs[idx], self.output[idx]
 
 
 class Net(LightningModule):
@@ -76,7 +77,6 @@ class Net(LightningModule):
     def setup(self, stage):
 
         full_path = [f"{self.root_dir}/{path}" for path in self.cfg.images]
-        # print('full_path', full_path)
         self.train_dataset = ImageNeighborhoodDataset(filenames=full_path)
         self.test_dataset = ImageNeighborhoodDataset(filenames=full_path)
 
@@ -86,7 +86,6 @@ class Net(LightningModule):
         loss = self.loss(y_hat, y)
 
         self.log(f"train_loss", loss, prog_bar=True)
-        # self.log(f'train_acc', acc, prog_bar=True)
 
         return loss
 
