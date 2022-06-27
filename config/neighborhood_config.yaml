@@ -1,26 +1,26 @@
-images :
+images:
   - "images/newt.jpg"
   - "images/jupiter.jpg"
   - "images/mountains.jpg"
-mlp :
-  layer_type : "polynomial"
-  n : 3
-  n_in : null
-  n_out : null
-  n_hidden : null
-  periodicity : 2.0
-  rescale_output : False
-  scale : 2.0
-  input :
-    segments : 1
-    width : 27
-  output :
-    segments : 1
-    width : 48
-  hidden :
-    segments : 2
-    layers : 1
-    width : 10
+mlp:
+  layer_type: "polynomial"
+  n: 3
+  n_in: null
+  n_out: null
+  n_hidden: null
+  periodicity: 2.0
+  rescale_output: False
+  scale: 2.0
+  input:
+    segments: 1
+    width: 27
+  output:
+    segments: 1
+    width: 48
+  hidden:
+    segments: 2
+    layers: 1
+    width: 10
 
 max_epochs: 50
 gpus: 1
@@ -30,3 +30,6 @@ batch_size: 256
 # Are you training? Otherwise plot the result
 train: True
 checkpoint: null
+
+defaults:
+  - optimizer: adam

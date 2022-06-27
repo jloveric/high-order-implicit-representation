@@ -1,20 +1,13 @@
 from typing import List
 
-from torchmetrics import Metric
 import os
 from omegaconf import DictConfig, OmegaConf
 import hydra
 from high_order_layers_torch.layers import *
-from pytorch_lightning import LightningModule, Trainer, LightningDataModule
-import torch.optim as optim
-import torch.nn.functional as F
-import torch.nn as nn
-import numpy as np
+from pytorch_lightning import Trainer, LightningDataModule
 import matplotlib.pyplot as plt
-import torchvision.transforms as transforms
-from torchvision import datasets, transforms
 import torch
-
+from high_order_implicit_representation.networks import Net
 from high_order_implicit_representation.single_image_dataset import (
     ImageNeighborhoodReader,
 )
@@ -100,45 +93,6 @@ class ImageNeighborhoodDataModule(LightningDataModule):
             num_workers=self._num_workers,
             drop_last=True,
         )
-
-
-class Net(LightningModule):
-    def __init__(self, cfg: DictConfig):
-        super().__init__()
-        self.save_hyperparameters(cfg)
-        self.cfg = cfg
-        self.model = HighOrderMLP(
-            layer_type=cfg.mlp.layer_type,
-            n=cfg.mlp.n,
-            n_in=cfg.mlp.n_in,
-            n_hidden=cfg.mlp.n_in,
-            n_out=cfg.mlp.n_out,
-            in_width=cfg.mlp.input.width,
-            in_segments=cfg.mlp.input.segments,
-            out_width=cfg.mlp.output.width,
-            out_segments=cfg.mlp.output.segments,
-            hidden_width=cfg.mlp.hidden.width,
-            hidden_layers=cfg.mlp.hidden.layers,
-            hidden_segments=cfg.mlp.hidden.segments,
-            normalization=nn.LazyBatchNorm1d,
-        )
-        self.root_dir = f"{hydra.utils.get_original_cwd()}"
-        self.loss = nn.MSELoss()
-
-    def forward(self, x):
-        return self.model(x)
-
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        loss = self.loss(y_hat, y)
-
-        self.log(f"train_loss", loss, prog_bar=True)
-
-        return loss
-
-    def configure_optimizers(self):
-        return optim.Adam(self.parameters(), lr=self.cfg.lr)
 
 
 @hydra.main(config_path="../config", config_name="neighborhood_config")
