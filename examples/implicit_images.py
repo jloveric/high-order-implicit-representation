@@ -23,8 +23,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 @hydra.main(config_path="../config", config_name="images_config")
 def run_implicit_images(cfg: DictConfig):
-    # TODO use a space filling curve to map x,y linear coordinates
-    # to space filling coordinates 1d coordinate.
+
     print(OmegaConf.to_yaml(cfg))
     print("Working directory : {}".format(os.getcwd()))
     print(f"Orig working directory    : {hydra.utils.get_original_cwd()}")

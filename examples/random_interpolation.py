@@ -94,6 +94,7 @@ def run_implicit_images(cfg: DictConfig):
         logger.info("evaluating result")
         logger.info(f"cfg.checkpoint {cfg.checkpoint}")
         checkpoint_path = f"{root_dir}/{cfg.checkpoint}"
+
         logger.info("checkpoint_path {checkpoint_path}")
         model = Net.load_from_checkpoint(checkpoint_path)
 

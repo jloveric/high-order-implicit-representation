@@ -100,6 +100,8 @@ class ImageNeighborhoodReader:
         Return :
             tensor of inner block, tensor of neighborhood
         """
+
+        # TODO: simplify a bit!
         img = image.imread(filename)
 
         torch_image = torch.from_numpy(np.array(img))
@@ -118,30 +120,33 @@ class ImageNeighborhoodReader:
         totalx = width + 2 * outside
         totaly = totalx
 
-        edge_mask = torch.ones(totalx, totaly, 3, dtype=bool)
-        edge_mask[outside : (outside + width), outside : (outside + width), :] = False
+        edge_mask = torch.ones(totalx, totaly, dtype=bool)
+        edge_mask[outside : (outside + width), outside : (outside + width)] = False
         block_mask = ~edge_mask
 
         edge_indexes = edge_mask.flatten()
         block_indexes = block_mask.flatten()
 
-        # TODO: do this without the loop
-        for i in range(max_x):
-            for j in range(max_y):
-                all_elements = torch_image[
-                    i : (i + totalx), j : (j + totaly), :
-                ].flatten()
+        torch_image = torch_image.permute(2, 0, 1).unsqueeze(0)
+        patches = (
+            torch_image.unfold(2, totalx, 1)
+            .unfold(3, totaly, 1)
+            .flatten(start_dim=4, end_dim=5)
+        )
 
-                patch = all_elements[block_indexes]
-                edge = all_elements[edge_indexes]
+        patches = patches.squeeze(0).permute(1, 2, 0, 3)
 
-                patch_edge.append(edge)
-                patch_block.append(patch)
+        patch_block = patches[:, :, :, block_indexes].flatten(2)
+        patch_edge = patches[:, :, :, edge_indexes].flatten(2)
 
-        patch_block = (2.0 / 255.0) * torch.stack(patch_block) - 1
-        patch_edge = (2.0 / 255.0) * torch.stack(patch_edge) - 1
+        patch_block = patch_block.reshape(
+            patch_block.shape[0] * patch_block.shape[1], -1
+        )
+        patch_edge = patch_edge.reshape(patch_edge.shape[0] * patch_edge.shape[1], -1)
+        patch_block = (2.0 / 255.0) * patch_block - 1
+        patch_edge = (2.0 / 255.0) * patch_edge - 1
 
-        return patch_block, patch_edge, torch_image
+        return patch_block, patch_edge, torch_image.squeeze(0)
 
 
 class ImageNeighborhoodDataset(Dataset):

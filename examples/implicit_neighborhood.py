@@ -1,5 +1,3 @@
-from typing import List
-
 import os
 from omegaconf import DictConfig, OmegaConf
 import hydra
@@ -46,6 +44,7 @@ def run_implicit_neighborhood(cfg: DictConfig):
         logger.info("evaluating result")
         logger.info(f"cfg.checkpoint {cfg.checkpoint}")
         checkpoint_path = f"{hydra.utils.get_original_cwd()}/{cfg.checkpoint}"
+
         print(f"checkpoint_path {checkpoint_path}")
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
@@ -68,12 +67,6 @@ def run_implicit_neighborhood(cfg: DictConfig):
             accum += y_hat
 
         y_hat = torch.stack(accum)
-
-        max_x = torch.max(inputs, dim=0)
-        max_y = torch.max(inputs, dim=1)
-        print("x_max", max_x, "y_max", max_y)
-        print("y_hat.shape", y_hat.shape)
-        print("image.shape", image.shape)
 
         ans = y_hat.reshape(lastx, lasty, image.shape[2], -1)
         ans = (ans + 1.0) / 2.0
