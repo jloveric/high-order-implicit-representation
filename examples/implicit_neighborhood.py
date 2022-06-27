@@ -10,6 +10,7 @@ from high_order_implicit_representation.single_image_dataset import (
     ImageNeighborhoodDataModule,
     ImageNeighborhoodDataset,
 )
+from pytorch_lightning.callbacks import LearningRateMonitor
 from high_order_layers_torch.networks import *
 import logging
 
@@ -31,7 +32,10 @@ def run_implicit_neighborhood(cfg: DictConfig):
         data_module = ImageNeighborhoodDataModule(
             filenames=full_path, width=3, outside=1, batch_size=cfg.batch_size
         )
-        trainer = Trainer(max_epochs=cfg.max_epochs, gpus=cfg.gpus)
+        lr_monitor = LearningRateMonitor(logging_interval="epoch")
+        trainer = Trainer(
+            max_epochs=cfg.max_epochs, gpus=cfg.gpus, callbacks=[lr_monitor]
+        )
         model = Net(cfg)
         trainer.fit(model, datamodule=data_module)
         logger.info("testing")
