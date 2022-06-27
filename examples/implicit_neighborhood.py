@@ -5,7 +5,7 @@ import os
 from omegaconf import DictConfig, OmegaConf
 import hydra
 from high_order_layers_torch.layers import *
-from pytorch_lightning import LightningModule, Trainer
+from pytorch_lightning import LightningModule, Trainer, LightningDataModule
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.nn as nn
@@ -15,7 +15,6 @@ import torchvision.transforms as transforms
 from torchvision import datasets, transforms
 import torch
 
-# from high_order_mlp import HighOrderMLP
 from high_order_implicit_representation.single_image_dataset import (
     ImageNeighborhoodReader,
 )
@@ -49,6 +48,60 @@ class ImageNeighborhoodDataset(Dataset):
         return self.inputs[idx], self.output[idx]
 
 
+class ImageNeighborhoodDataModule(LightningDataModule):
+    def __init__(
+        self,
+        filenames: List[str],
+        width: int = 3,
+        outside: int = 1,
+        num_workers: int = 10,
+        pin_memory: int = True,
+        batch_size: int = 32,
+        shuffle=True,
+    ):
+        super().__init__()
+        self._filenames = filenames
+        self._width = width
+        self._outside = outside
+        self._num_workers = num_workers
+        self._pin_memory = pin_memory
+        self._batch_size = batch_size
+        self._shuffle = shuffle
+
+    def setup(self, stage: Optional[str] = None):
+
+        self._train_dataset = ImageNeighborhoodDataset(filenames=self._filenames)
+        self._test_dataset = ImageNeighborhoodDataset(filenames=self._filenames)
+
+    @property
+    def train_dataset(self) -> Dataset:
+        return self._train_dataset
+
+    @property
+    def test_dataset(self) -> Dataset:
+        return self._test_dataset
+
+    def train_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self._train_dataset,
+            batch_size=self._batch_size,
+            shuffle=self._shuffle,
+            pin_memory=self._pin_memory,
+            num_workers=self._num_workers,
+            drop_last=True,  # Needed for batchnorm
+        )
+
+    def test_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self._test_dataset,
+            batch_size=self._batch_size,
+            shuffle=False,
+            pin_memory=self._pin_memory,
+            num_workers=self._num_workers,
+            drop_last=True,
+        )
+
+
 class Net(LightningModule):
     def __init__(self, cfg: DictConfig):
         super().__init__()
@@ -67,18 +120,13 @@ class Net(LightningModule):
             hidden_width=cfg.mlp.hidden.width,
             hidden_layers=cfg.mlp.hidden.layers,
             hidden_segments=cfg.mlp.hidden.segments,
+            normalization=nn.LazyBatchNorm1d,
         )
         self.root_dir = f"{hydra.utils.get_original_cwd()}"
         self.loss = nn.MSELoss()
 
     def forward(self, x):
         return self.model(x)
-
-    def setup(self, stage):
-
-        full_path = [f"{self.root_dir}/{path}" for path in self.cfg.images]
-        self.train_dataset = ImageNeighborhoodDataset(filenames=full_path)
-        self.test_dataset = ImageNeighborhoodDataset(filenames=full_path)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -88,25 +136,6 @@ class Net(LightningModule):
         self.log(f"train_loss", loss, prog_bar=True)
 
         return loss
-
-    def train_dataloader(self):
-        trainloader = torch.utils.data.DataLoader(
-            self.train_dataset,
-            batch_size=self.cfg.batch_size,
-            shuffle=True,
-            num_workers=10,
-        )
-        return trainloader
-
-    def test_dataloader(self):
-
-        testloader = torch.utils.data.DataLoader(
-            self.test_dataset,
-            batch_size=self.cfg.batch_size,
-            shuffle=False,
-            num_workers=10,
-        )
-        return testloader
 
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=self.cfg.lr)
@@ -119,13 +148,18 @@ def run_implicit_neighborhood(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
     print("Working directory : {}".format(os.getcwd()))
     print(f"Orig working directory    : {hydra.utils.get_original_cwd()}")
+    root_dir = hydra.utils.get_original_cwd()
 
     if cfg.train is True:
+        full_path = [f"{root_dir}/{path}" for path in cfg.images]
+        data_module = ImageNeighborhoodDataModule(
+            filenames=full_path, width=3, outside=1, batch_size=cfg.batch_size
+        )
         trainer = Trainer(max_epochs=cfg.max_epochs, gpus=cfg.gpus)
         model = Net(cfg)
-        trainer.fit(model)
+        trainer.fit(model, datamodule=data_module)
         print("testing")
-        trainer.test(model)
+        trainer.test(model, datamodule=data_module)
         print("finished testing")
         print("best check_point", trainer.checkpoint_callback.best_model_path)
     else:

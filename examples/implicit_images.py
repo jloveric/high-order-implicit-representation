@@ -73,6 +73,7 @@ class Net(LightningModule):
             hidden_width=cfg.mlp.hidden.width,
             hidden_layers=cfg.mlp.hidden.layers,
             hidden_segments=cfg.mlp.hidden.segments,
+            normalization=nn.LazyBatchNorm1d,
         )
         self.root_dir = f"{hydra.utils.get_original_cwd()}"
         self.loss = nn.MSELoss()
@@ -83,7 +84,6 @@ class Net(LightningModule):
     def setup(self, stage: str):
 
         full_path = [f"{self.root_dir}/{path}" for path in self.cfg.images]
-        # print('full_path', full_path)
         self.train_dataset = ImageDataset(
             filenames=full_path, rotations=self.cfg.rotations
         )
@@ -98,7 +98,6 @@ class Net(LightningModule):
         loss = self.loss(y_hat, y)
 
         self.log(f"train_loss", loss, prog_bar=True)
-        # self.log(f'train_acc', acc, prog_bar=True)
 
         return loss
 
