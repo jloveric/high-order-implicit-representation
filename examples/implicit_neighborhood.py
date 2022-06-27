@@ -4,14 +4,14 @@ import os
 from omegaconf import DictConfig, OmegaConf
 import hydra
 from high_order_layers_torch.layers import *
-from pytorch_lightning import Trainer, LightningDataModule
+from pytorch_lightning import Trainer
 import matplotlib.pyplot as plt
 import torch
 from high_order_implicit_representation.networks import Net
 from high_order_implicit_representation.single_image_dataset import (
-    ImageNeighborhoodReader,
+    ImageNeighborhoodDataModule,
+    ImageNeighborhoodDataset,
 )
-from torch.utils.data import DataLoader, Dataset
 from high_order_layers_torch.networks import *
 import logging
 
@@ -20,88 +20,12 @@ logger = logging.getLogger(__name__)
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-class ImageNeighborhoodDataset(Dataset):
-    def __init__(self, filenames: List[str], width: int = 3, outside: int = 1):
-        # TODO: right now grabbing the first element
-        ind = ImageNeighborhoodReader(filenames[0], width=width, outside=outside)
-        self.inputs = ind.features
-        self.output = ind.targets
-        self.image = ind.image
-        self.lastx = ind.lastx
-        self.lasty = ind.lasty
-        self.image_neighborhood = ind
-
-    def __len__(self):
-        return len(self.output)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        return self.inputs[idx], self.output[idx]
-
-
-class ImageNeighborhoodDataModule(LightningDataModule):
-    def __init__(
-        self,
-        filenames: List[str],
-        width: int = 3,
-        outside: int = 1,
-        num_workers: int = 10,
-        pin_memory: int = True,
-        batch_size: int = 32,
-        shuffle=True,
-    ):
-        super().__init__()
-        self._filenames = filenames
-        self._width = width
-        self._outside = outside
-        self._num_workers = num_workers
-        self._pin_memory = pin_memory
-        self._batch_size = batch_size
-        self._shuffle = shuffle
-
-    def setup(self, stage: Optional[str] = None):
-
-        self._train_dataset = ImageNeighborhoodDataset(filenames=self._filenames)
-        self._test_dataset = ImageNeighborhoodDataset(filenames=self._filenames)
-
-    @property
-    def train_dataset(self) -> Dataset:
-        return self._train_dataset
-
-    @property
-    def test_dataset(self) -> Dataset:
-        return self._test_dataset
-
-    def train_dataloader(self) -> DataLoader:
-        return DataLoader(
-            self._train_dataset,
-            batch_size=self._batch_size,
-            shuffle=self._shuffle,
-            pin_memory=self._pin_memory,
-            num_workers=self._num_workers,
-            drop_last=True,  # Needed for batchnorm
-        )
-
-    def test_dataloader(self) -> DataLoader:
-        return DataLoader(
-            self._test_dataset,
-            batch_size=self._batch_size,
-            shuffle=False,
-            pin_memory=self._pin_memory,
-            num_workers=self._num_workers,
-            drop_last=True,
-        )
-
-
 @hydra.main(config_path="../config", config_name="neighborhood_config")
 def run_implicit_neighborhood(cfg: DictConfig):
-    # TODO use a space filling curve to map x,y linear coordinates
-    # to space filling coordinates 1d coordinate.
-    print(OmegaConf.to_yaml(cfg))
-    print("Working directory : {}".format(os.getcwd()))
-    print(f"Orig working directory    : {hydra.utils.get_original_cwd()}")
+
+    logger.info(OmegaConf.to_yaml(cfg))
+    logger.info(f"Working directory {format(os.getcwd())}")
+    logger.info(f"Orig working directory {hydra.utils.get_original_cwd()}")
     root_dir = hydra.utils.get_original_cwd()
 
     if cfg.train is True:
@@ -112,22 +36,22 @@ def run_implicit_neighborhood(cfg: DictConfig):
         trainer = Trainer(max_epochs=cfg.max_epochs, gpus=cfg.gpus)
         model = Net(cfg)
         trainer.fit(model, datamodule=data_module)
-        print("testing")
+        logger.info("testing")
+
         trainer.test(model, datamodule=data_module)
-        print("finished testing")
-        print("best check_point", trainer.checkpoint_callback.best_model_path)
+        logger.info("finished testing")
+        logger.info(f"best check_point {trainer.checkpoint_callback.best_model_path}")
     else:
         # plot some data
-        print("evaluating result")
-        print("cfg.checkpoint", cfg.checkpoint)
+        logger.info("evaluating result")
+        logger.info(f"cfg.checkpoint {cfg.checkpoint}")
         checkpoint_path = f"{hydra.utils.get_original_cwd()}/{cfg.checkpoint}"
-        print("checkpoint_path", checkpoint_path)
+        print(f"checkpoint_path {checkpoint_path}")
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
         image_dir = f"{hydra.utils.get_original_cwd()}/{cfg.images[1]}"
-        # output, inputs, image = image_to_dataset(
-        #    image_dir, rotations=cfg.rotations)
-        print("image_dir", image_dir)
+
+        print(f"image_dir {image_dir}")
         ind = ImageNeighborhoodDataset(image_dir, width=3, outside=1)
         inputs = ind.inputs
         image = ind.image
@@ -150,6 +74,7 @@ def run_implicit_neighborhood(cfg: DictConfig):
         print("x_max", max_x, "y_max", max_y)
         print("y_hat.shape", y_hat.shape)
         print("image.shape", image.shape)
+
         ans = y_hat.reshape(lastx, lasty, image.shape[2], -1)
         ans = (ans + 1.0) / 2.0
         f, axarr = plt.subplots(1, 2)

@@ -3,9 +3,11 @@ from matplotlib import image
 import torch
 from torch import Tensor
 import numpy as np
-from hilbertcurve.hilbertcurve import HilbertCurve
 import math
 import logging
+from torch.utils.data import DataLoader, Dataset
+from typing import Optional, List
+from pytorch_lightning import LightningDataModule
 
 logger = logging.getLogger(__name__)
 
@@ -37,17 +39,6 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     xv = xv.reshape(xv.shape[0], xv.shape[1], 1)
     yv = yv.reshape(yv.shape[0], yv.shape[1], 1)
 
-    """
-    if peano is True:
-        # can index 2^{n*p} cubes with p = 2 (dimension)
-        n = 2  # number of dimensions
-        p = math.ceil(math.log(max_size, n)/2.0)
-        hilbert_curve = HilbertCurve(p=p, n=2)
-        cartesian_position = torch_position.tolist()
-        hilbert_distances = hilbert_curve.distance_from_points(
-            cartesian_position)
-    """
-
     if rotations == 2:
         torch_position = torch.cat([xv, yv, (xv - yv) / 2.0, (xv + yv) / 2.0], dim=2)
         torch_position = torch_position.reshape(-1, 4)
@@ -68,8 +59,6 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
 
         torch_position = torch.cat(line_list, dim=2)
         torch_position = torch_position.reshape(-1, 2 * rotations)
-
-        # raise(f"Rotation {rotations} not implemented.")
 
     torch_image_flat = torch_image.reshape(-1, 3) * 2.0 / 255.0 - 1
 
@@ -136,6 +125,7 @@ class ImageNeighborhoodReader:
         edge_indexes = edge_mask.flatten()
         block_indexes = block_mask.flatten()
 
+        # TODO: do this without the loop
         for i in range(max_x):
             for j in range(max_y):
                 all_elements = torch_image[
@@ -152,3 +142,152 @@ class ImageNeighborhoodReader:
         patch_edge = (2.0 / 255.0) * torch.stack(patch_edge) - 1
 
         return patch_block, patch_edge, torch_image
+
+
+class ImageNeighborhoodDataset(Dataset):
+    def __init__(self, filenames: List[str], width: int = 3, outside: int = 1):
+        # TODO: right now grabbing the first element
+        ind = ImageNeighborhoodReader(filenames[0], width=width, outside=outside)
+        self.inputs = ind.features
+        self.output = ind.targets
+        self.image = ind.image
+        self.lastx = ind.lastx
+        self.lasty = ind.lasty
+        self.image_neighborhood = ind
+
+    def __len__(self):
+        return len(self.output)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        return self.inputs[idx], self.output[idx]
+
+
+class ImageNeighborhoodDataModule(LightningDataModule):
+    def __init__(
+        self,
+        filenames: List[str],
+        width: int = 3,
+        outside: int = 1,
+        num_workers: int = 10,
+        pin_memory: int = True,
+        batch_size: int = 32,
+        shuffle=True,
+    ):
+        super().__init__()
+        self._filenames = filenames
+        self._width = width
+        self._outside = outside
+        self._num_workers = num_workers
+        self._pin_memory = pin_memory
+        self._batch_size = batch_size
+        self._shuffle = shuffle
+
+    def setup(self, stage: Optional[str] = None):
+
+        self._train_dataset = ImageNeighborhoodDataset(filenames=self._filenames)
+
+        # Since I'm doing memorization, I actually want test and train to be the same
+        self._test_dataset = ImageNeighborhoodDataset(filenames=self._filenames)
+
+    @property
+    def train_dataset(self) -> Dataset:
+        return self._train_dataset
+
+    @property
+    def test_dataset(self) -> Dataset:
+        return self._test_dataset
+
+    def train_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self._train_dataset,
+            batch_size=self._batch_size,
+            shuffle=self._shuffle,
+            pin_memory=self._pin_memory,
+            num_workers=self._num_workers,
+            drop_last=True,  # Needed for batchnorm
+        )
+
+    def test_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self._test_dataset,
+            batch_size=self._batch_size,
+            shuffle=False,
+            pin_memory=self._pin_memory,
+            num_workers=self._num_workers,
+            drop_last=True,
+        )
+
+
+class ImageDataset(Dataset):
+    def __init__(self, filenames: List[str], rotations: int = 1):
+        self.output, self.input, self.image = image_to_dataset(
+            filenames[0], rotations=rotations
+        )
+
+    def __len__(self):
+        return len(self.output)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        return self.input[idx], self.output[idx]
+
+
+class ImageDataModule(LightningDataModule):
+    def __init__(
+        self,
+        filenames: List[str],
+        num_workers: int = 10,
+        pin_memory: int = True,
+        batch_size: int = 32,
+        shuffle: bool = True,
+        rotations: int = 2,
+    ):
+        super().__init__()
+        self._filenames = filenames
+        self._num_workers = num_workers
+        self._pin_memory = pin_memory
+        self._batch_size = batch_size
+        self._shuffle = shuffle
+        self._rotations = rotations
+
+    def setup(self, stage: Optional[str] = None):
+
+        self._train_dataset = ImageDataset(
+            filenames=self._filenames, rotations=self._rotations
+        )
+        self._test_dataset = ImageDataset(
+            filenames=self._filenames, rotations=self._rotations
+        )
+
+    @property
+    def train_dataset(self) -> Dataset:
+        return self._train_dataset
+
+    @property
+    def test_dataset(self) -> Dataset:
+        return self._test_dataset
+
+    def train_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self._train_dataset,
+            batch_size=self._batch_size,
+            shuffle=self._shuffle,
+            pin_memory=self._pin_memory,
+            num_workers=self._num_workers,
+            drop_last=True,  # Needed for batchnorm
+        )
+
+    def test_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self._test_dataset,
+            batch_size=self._batch_size,
+            shuffle=False,
+            pin_memory=self._pin_memory,
+            num_workers=self._num_workers,
+            drop_last=True,
+        )
