@@ -67,7 +67,9 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     return torch_image_flat, torch_position, torch_image
 
 
-def image_neighborhood_dataset(image: Tensor, width=3, outside=1):
+def image_neighborhood_dataset(
+    image: Tensor, width: int = 3, outside: int = 1, stride: int = 1
+):
     """
     Args :
         image : Normalized image tensor in range [-1 to 1]
@@ -97,7 +99,9 @@ def image_neighborhood_dataset(image: Tensor, width=3, outside=1):
 
     image = image.unsqueeze(0)
     patches = (
-        image.unfold(2, totalx, 1).unfold(3, totaly, 1).flatten(start_dim=4, end_dim=5)
+        image.unfold(2, totalx, stride)
+        .unfold(3, totaly, stride)
+        .flatten(start_dim=4, end_dim=5)
     )
 
     patches = patches.squeeze(0).permute(1, 2, 0, 3)
