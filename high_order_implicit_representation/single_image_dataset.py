@@ -193,10 +193,14 @@ class ImageNeighborhoodDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
 
-        self._train_dataset = ImageNeighborhoodDataset(filenames=self._filenames)
+        self._train_dataset = ImageNeighborhoodDataset(
+            filenames=self._filenames, width=self._width, outside=self._outside
+        )
 
         # Since I'm doing memorization, I actually want test and train to be the same
-        self._test_dataset = ImageNeighborhoodDataset(filenames=self._filenames)
+        self._test_dataset = ImageNeighborhoodDataset(
+            filenames=self._filenames, width=self._width, outside=self._outside
+        )
 
     @property
     def train_dataset(self) -> Dataset:

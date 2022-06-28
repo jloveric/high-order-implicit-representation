@@ -10,6 +10,7 @@ from high_order_implicit_representation.single_image_dataset import (
     ImageNeighborhoodDataModule,
     ImageNeighborhoodDataset,
 )
+from high_order_implicit_representation.rendering import NeighborGenerator
 from pytorch_lightning.callbacks import LearningRateMonitor
 from high_order_layers_torch.networks import *
 import logging
@@ -29,18 +30,23 @@ def run_implicit_neighborhood(cfg: DictConfig):
 
     if cfg.train is True:
         full_path = [f"{root_dir}/{path}" for path in cfg.images]
-        data_module = ImageNeighborhoodDataModule(
-            filenames=full_path, width=3, outside=1, batch_size=cfg.batch_size
+        datamodule = ImageNeighborhoodDataModule(
+            filenames=full_path, width=3, outside=3, batch_size=cfg.batch_size
         )
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
+        image_generator = NeighborGenerator(
+            samples=5, frames=10, output_size=[60, 60], width=3, outside=3
+        )
         trainer = Trainer(
-            max_epochs=cfg.max_epochs, gpus=cfg.gpus, callbacks=[lr_monitor]
+            max_epochs=cfg.max_epochs,
+            gpus=cfg.gpus,
+            callbacks=[lr_monitor, image_generator],
         )
         model = Net(cfg)
-        trainer.fit(model, datamodule=data_module)
+        trainer.fit(model, datamodule=datamodule)
         logger.info("testing")
 
-        trainer.test(model, datamodule=data_module)
+        trainer.test(model, datamodule=datamodule)
         logger.info("finished testing")
         logger.info(f"best check_point {trainer.checkpoint_callback.best_model_path}")
     else:

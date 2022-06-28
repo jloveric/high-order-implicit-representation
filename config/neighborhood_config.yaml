@@ -3,7 +3,7 @@ images:
   - "images/jupiter.jpg"
   - "images/mountains.jpg"
 mlp:
-  layer_type: "polynomial"
+  layer_type: "continuous"
   n: 3
   n_in: null
   n_out: null
@@ -13,10 +13,10 @@ mlp:
   scale: 2.0
   input:
     segments: 1
-    width: 27
+    width: 216 # The number (9*9-3*3)*3
   output:
     segments: 1
-    width: 48
+    width: 27
   hidden:
     segments: 2
     layers: 1

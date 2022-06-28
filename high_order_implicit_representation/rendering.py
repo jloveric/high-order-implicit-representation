@@ -72,22 +72,6 @@ def neighborhood_sample_generator(
         stride=width,
     )
 
-    """
-    dshape = (torch.tensor(image.shape) - torch.tensor(result.shape[1:])) // 2
-
-    dshape = dshape[1:]
-
-    # It's crazy, but padding is reversed from typical order H, W and list below as W, H
-    padding = (
-        dshape[1],
-        dshape[1],
-        dshape[0],
-        dshape[0],
-    )
-
-    # pad targets
-    #this_image = nn.ReflectionPad2d(padding=padding)(result)
-    """
     return result.squeeze(0)[
         :, tpad : (tpad + image.shape[1]), tpad : (tpad + image.shape[2])
     ]
@@ -96,7 +80,6 @@ def neighborhood_sample_generator(
 class NeighborGenerator(Callback):
     def __init__(
         self,
-        model: torch.nn.Module,
         samples: int = 5,
         frames: int = 10,
         output_size: List[int] = default_size,
@@ -104,7 +87,6 @@ class NeighborGenerator(Callback):
         outside=1,
     ) -> None:
         super().__init__()
-        self._model = model
         self._samples = samples
         self._width = width
         self._outside = outside
@@ -134,7 +116,6 @@ class NeighborGenerator(Callback):
 
             img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
 
-            # PLOT IMAGES
             trainer.logger.experiment.add_image(
                 f"sample {e}",
                 torch.tensor(img).permute(2, 0, 1),
