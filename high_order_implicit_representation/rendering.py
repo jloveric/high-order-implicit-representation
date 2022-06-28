@@ -23,8 +23,27 @@ def neighborhood_sample_generator(
     width: int,
     outside: int,
 ):
+    """
+    Create a bunch of samples with size width x width and and stride
+    width computed from the input values.  The input values are a (square) donut
+    around the the central block.
+    Args :
+      model : the model
+      image : image tensor in the form [C, H, W] and assumed normalized to [-1, 1]
+      width : width of the central block w x w
+      outside : width of surrounding cells.  Total block has size (width+2*outside)^2 so
+      the out side material is the feature set.
+    Returns :
+      A new image with updated values assuming 2d reflection boundary conditions
+    """
+
+    # Adding extra padding to the boundary to account for edge cases.
+    tpad = 2 * outside + width
+
+    ext_image = nn.ReflectionPad2d(padding=tpad)(image)
+
     output = image_neighborhood_dataset(
-        image=image,
+        image=ext_image,
         width=width,
         outside=outside,
         stride=width,
@@ -33,7 +52,7 @@ def neighborhood_sample_generator(
 
     total_size = width + 2 * outside
 
-    imax, jmax = image.shape[1:3]
+    imax, jmax = ext_image.shape[1:3]
 
     # Extents for starting new block of size total_size
     ni = imax - total_size + 1
@@ -53,6 +72,7 @@ def neighborhood_sample_generator(
         stride=width,
     )
 
+    """
     dshape = (torch.tensor(image.shape) - torch.tensor(result.shape[1:])) // 2
 
     dshape = dshape[1:]
@@ -66,8 +86,11 @@ def neighborhood_sample_generator(
     )
 
     # pad targets
-    this_image = nn.ReflectionPad2d(padding=padding)(result)
-    return this_image.squeeze(0)
+    #this_image = nn.ReflectionPad2d(padding=padding)(result)
+    """
+    return result.squeeze(0)[
+        :, tpad : (tpad + image.shape[1]), tpad : (tpad + image.shape[2])
+    ]
 
 
 class NeighborGenerator(Callback):
