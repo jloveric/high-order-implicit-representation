@@ -67,7 +67,7 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     return torch_image_flat, torch_position, torch_image
 
 
-def image_neighborhood_dataset(image: Tensor, filename: str, width=3, outside=1):
+def image_neighborhood_dataset(image: Tensor, width=3, outside=1):
     """
     Args :
         image : Normalized image tensor in range [-1 to 1]
@@ -123,9 +123,7 @@ class ImageNeighborhoodReader:
             self._image,
             self._lastx,
             self._lasty,
-        ) = image_neighborhood_dataset(
-            image=image, filename=filename, width=width, outside=outside
-        )
+        ) = image_neighborhood_dataset(image=image, width=width, outside=outside)
 
     @property
     def features(self) -> Tensor:
