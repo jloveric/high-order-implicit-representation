@@ -8,6 +8,8 @@ import logging
 from torch.utils.data import DataLoader, Dataset
 from typing import Optional, List
 from pytorch_lightning import LightningDataModule
+from PIL import Image
+from torchvision import transforms
 
 logger = logging.getLogger(__name__)
 
@@ -65,10 +67,64 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     return torch_image_flat, torch_position, torch_image
 
 
+def image_neighborhood_dataset(image: Tensor, filename: str, width=3, outside=1):
+    """
+    Args :
+        image : Normalized image tensor in range [-1 to 1]
+        width: width of the inner block.
+        outside : width of the outer neighborhood surrounding the inner block.
+    Return :
+        tensor of inner block, tensor of neighborhood
+    """
+
+    px = image.shape[1]
+    py = image.shape[2]
+
+    max_x = px - (width + 2 * outside)
+    max_y = py - (width + 2 * outside)
+    lastx = max_x
+    lasty = max_y
+
+    totalx = width + 2 * outside
+    totaly = totalx
+
+    edge_mask = torch.ones(totalx, totaly, dtype=bool)
+    edge_mask[outside : (outside + width), outside : (outside + width)] = False
+    block_mask = ~edge_mask
+
+    edge_indexes = edge_mask.flatten()
+    block_indexes = block_mask.flatten()
+
+    image = image.unsqueeze(0)
+    patches = (
+        image.unfold(2, totalx, 1).unfold(3, totaly, 1).flatten(start_dim=4, end_dim=5)
+    )
+
+    patches = patches.squeeze(0).permute(1, 2, 0, 3)
+
+    patch_block = patches[:, :, :, block_indexes].flatten(2)
+    patch_edge = patches[:, :, :, edge_indexes].flatten(2)
+
+    patch_block = patch_block.reshape(patch_block.shape[0] * patch_block.shape[1], -1)
+    patch_edge = patch_edge.reshape(patch_edge.shape[0] * patch_edge.shape[1], -1)
+
+    return patch_edge, patch_block, image.squeeze(0), lastx, lasty
+
+
 class ImageNeighborhoodReader:
     def __init__(self, filename: str, width=3, outside=1):
-        self._input, self._output, self._image = self.image_neighborhood_dataset(
-            filename=filename, width=width, outside=outside
+
+        img = Image.open(filename)
+        image = transforms.ToTensor()(img) * 2 - 1
+
+        (
+            self._input,
+            self._output,
+            self._image,
+            self._lastx,
+            self._lasty,
+        ) = image_neighborhood_dataset(
+            image=image, filename=filename, width=width, outside=outside
         )
 
     @property
@@ -90,63 +146,6 @@ class ImageNeighborhoodReader:
     @property
     def lasty(self) -> int:
         return self._lasty
-
-    def image_neighborhood_dataset(self, filename: str, width=3, outside=1):
-        """
-        Args :
-            filename : Name of image file to create data from.
-            width: width of the inner block.
-            outside : width of the outer neighborhood surrounding the inner block.
-        Return :
-            tensor of inner block, tensor of neighborhood
-        """
-
-        # TODO: simplify a bit!
-        img = image.imread(filename)
-
-        torch_image = torch.from_numpy(np.array(img))
-
-        px = torch_image.shape[0]
-        py = torch_image.shape[1]
-
-        patch_edge = []
-        patch_block = []
-
-        max_x = px - (width + 2 * outside)
-        max_y = py - (width + 2 * outside)
-        self._lastx = max_x
-        self._lasty = max_y
-
-        totalx = width + 2 * outside
-        totaly = totalx
-
-        edge_mask = torch.ones(totalx, totaly, dtype=bool)
-        edge_mask[outside : (outside + width), outside : (outside + width)] = False
-        block_mask = ~edge_mask
-
-        edge_indexes = edge_mask.flatten()
-        block_indexes = block_mask.flatten()
-
-        torch_image = torch_image.permute(2, 0, 1).unsqueeze(0)
-        patches = (
-            torch_image.unfold(2, totalx, 1)
-            .unfold(3, totaly, 1)
-            .flatten(start_dim=4, end_dim=5)
-        )
-
-        patches = patches.squeeze(0).permute(1, 2, 0, 3)
-
-        patch_block = patches[:, :, :, block_indexes].flatten(2)
-        patch_edge = patches[:, :, :, edge_indexes].flatten(2)
-
-        patch_block = patch_block.reshape(
-            patch_block.shape[0] * patch_block.shape[1], -1
-        )
-        patch_edge = patch_edge.reshape(patch_edge.shape[0] * patch_edge.shape[1], -1)
-        patch_block = (2.0 / 255.0) * patch_block - 1
-        patch_edge = (2.0 / 255.0) * patch_edge - 1
-
-        return patch_block, patch_edge, torch_image.squeeze(0)
 
 
 class ImageNeighborhoodDataset(Dataset):
@@ -173,7 +172,7 @@ class ImageNeighborhoodDataset(Dataset):
 class ImageNeighborhoodDataModule(LightningDataModule):
     def __init__(
         self,
-        filenames: List[str],
+        filenames: List[str] = None,
         width: int = 3,
         outside: int = 1,
         num_workers: int = 10,
