@@ -4,16 +4,13 @@ import torch
 from omegaconf import DictConfig
 from high_order_implicit_representation.networks import Net
 
-"""
-@pytest.mark.parametrize("image_height", [32])
-@pytest.mark.parametrize("image_width", [32])
-@pytest.mark.parametrize("width", [5])
-@pytest.mark.parametrize("outside", [5])
-"""
 
-
-def test_neighborhood_sample_generator():  # (image_height, image_width, width, outside):
-    image_height = 32
+@pytest.mark.parametrize("image_height", [21, 32])
+@pytest.mark.parametrize("image_width", [21, 32])
+@pytest.mark.parametrize("width", [1, 3, 5])
+@pytest.mark.parametrize("outside", [1, 3, 5])
+def test_neighborhood_sample_generator(image_height, image_width, width, outside):
+    image_height = 21
     image_width = 32
     width = 3
     outside = 3
@@ -71,8 +68,6 @@ def test_neighborhood_sample_generator():  # (image_height, image_width, width, 
         image=image,
         width=width,
         outside=outside,
-        output_size=[image_height, image_width],
     )
 
-    print("result.shape", result.shape)
     assert result.shape == image.shape

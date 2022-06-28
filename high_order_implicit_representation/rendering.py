@@ -11,6 +11,7 @@ from torch import nn
 from high_order_implicit_representation.single_image_dataset import (
     image_neighborhood_dataset,
 )
+import math
 
 logger = logging.getLogger(__name__)
 default_size = [64, 64]
@@ -21,7 +22,6 @@ def neighborhood_sample_generator(
     image: Tensor,
     width: int,
     outside: int,
-    output_size: List[str] = default_size,
 ):
     output = image_neighborhood_dataset(
         image=image,
@@ -34,18 +34,16 @@ def neighborhood_sample_generator(
     total_size = width + 2 * outside
 
     imax, jmax = image.shape[1:3]
+
+    # Extents for starting new block of size total_size
     ni = imax - total_size + 1
     nj = jmax - total_size + 1
-
-    print("features.shape", features.shape)
 
     targets = model(features)
     targets = targets.permute(1, 0)
     targets = targets.unsqueeze(0)  # one batch
 
-    print("targets.shape", targets.shape)
-
-    reduced_size = [ni, nj]
+    reduced_size = [math.ceil(ni / width) * width, math.ceil(nj / width) * width]
 
     # convert targets back into image
     result = nn.functional.fold(
@@ -54,13 +52,19 @@ def neighborhood_sample_generator(
         kernel_size=width,
         stride=width,
     )
-    print("results.shape", result.shape)
-    print("image.shape", image.shape)
 
     dshape = (torch.tensor(image.shape) - torch.tensor(result.shape[1:])) // 2
+
     dshape = dshape[1:]
-    padding = (dshape[0], dshape[0], dshape[1], dshape[1])
-    print("dshape", dshape, "padding", padding)
+
+    # It's crazy, but padding is reversed from typical order H, W and list below as W, H
+    padding = (
+        dshape[1],
+        dshape[1],
+        dshape[0],
+        dshape[0],
+    )
+
     # pad targets
     this_image = nn.ReflectionPad2d(padding=padding)(result)
     return this_image.squeeze(0)
@@ -100,7 +104,6 @@ class NeighborGenerator(Callback):
                     model=pl_module,
                     image=this_image,
                     outside=self._outside,
-                    output_size=self._output_size,
                 )
                 images_list.append(this_image)
 
