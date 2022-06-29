@@ -131,3 +131,5 @@ dmypy.json
 .vscode
 multirun
 outputs
+
+lightning_logs
