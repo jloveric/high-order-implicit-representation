@@ -14,6 +14,7 @@ Evaluate a model example
 ```
 python example/implicit_images.py train=False checkpoint=\"multirun/2021-01-10/18-31-32/0/lightning_logs/version_0/checkpoints/epoch=49-step=145349.ckpt\" rotations=2
 ```
+Alternatively, model results are also plotted for each result in tensorboard
 ## Examples
 ### Piecewise Continuous
 The example below uses piecewise quadratic polynomials.  The input layer is the x, y position where there are 100 segments

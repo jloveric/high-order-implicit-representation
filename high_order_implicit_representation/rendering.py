@@ -111,41 +111,41 @@ class NeighborGenerator(Callback):
         self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> None:
         pl_module.eval()
-
-        for e in range(self._samples):
-            images_list = []
-            this_image = (
-                torch.rand(
-                    3,
-                    self._output_size[0],
-                    self._output_size[1],
-                    device=pl_module.device,
+        with torch.no_grad():
+            for e in range(self._samples):
+                images_list = []
+                this_image = (
+                    torch.rand(
+                        3,
+                        self._output_size[0],
+                        self._output_size[1],
+                        device=pl_module.device,
+                    )
+                    * 2
+                    - 1
                 )
-                * 2
-                - 1
-            )
-            for _ in range(self._frames):
-                new_image = neighborhood_sample_generator(
-                    model=pl_module,
-                    image=this_image,
-                    width=self._width,
-                    outside=self._outside,
-                    device=pl_module.device,
-                    batch_size=self._batch_size,
+                for _ in range(self._frames):
+                    new_image = neighborhood_sample_generator(
+                        model=pl_module,
+                        image=this_image,
+                        width=self._width,
+                        outside=self._outside,
+                        device=pl_module.device,
+                        batch_size=self._batch_size,
+                    )
+                    this_image = 0.5 * (this_image + new_image)
+                    images_list.append(this_image.cpu().clone().detach())
+
+                all_images = torch.stack(images_list, dim=0).detach()
+                all_images = 0.5 * (all_images + 1)
+
+                img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
+
+                trainer.logger.experiment.add_image(
+                    f"sample {e}",
+                    torch.tensor(img).permute(2, 0, 1),
+                    global_step=trainer.global_step,
                 )
-                this_image = 0.5 * (this_image + new_image)
-                images_list.append(this_image.cpu().clone().detach())
-
-            all_images = torch.stack(images_list, dim=0).detach()
-            all_images = 0.5 * (all_images + 1)
-
-            img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
-
-            trainer.logger.experiment.add_image(
-                f"sample {e}",
-                torch.tensor(img).permute(2, 0, 1),
-                global_step=trainer.global_step,
-            )
 
 
 """
@@ -224,44 +224,60 @@ def generate_images(model: nn.Module, save_to: str = None, layer_type: str = Non
 
 
 class ImageGenerator(Callback):
-    def __init__(self, filename, rotations):
+    def __init__(self, filename, rotations, batch_size):
         _, self._inputs, self._image = image_to_dataset(filename, rotations=rotations)
+        self._batch_size = batch_size
 
     @rank_zero_only
     def on_train_epoch_end(
         self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> None:
         pl_module.eval()
+        with torch.no_grad():
+            self._inputs = self._inputs.to(device=pl_module.device)
 
-        y_hat = pl_module(self._inputs)
+            y_hat_list = []
+            batches = (len(self._inputs) + self._batch_size) // self._batch_size
+            for batch in range(batches):
+                res = pl_module(
+                    self._inputs[
+                        batch * self._batch_size : (batch + 1) * self._batch_size
+                    ]
+                )
+                y_hat_list.append(res.detach().cpu())
+            y_hat = torch.cat(y_hat_list)
 
-        ans = y_hat.reshape(
-            self._image.shape[0], self._image.shape[1], self._image.shape[2]
-        )
-        ans = 0.5 * (ans + 1.0)
+            ans = y_hat.reshape(
+                self._image.shape[0], self._image.shape[1], self._image.shape[2]
+            )
+            ans = 0.5 * (ans + 1.0)
 
-        f, axarr = plt.subplots(1, 2)
-        axarr[0].imshow(ans.detach().numpy())
-        axarr[0].set_title("fit")
-        axarr[1].imshow(self._image)
-        axarr[1].set_title("original")
+            f, axarr = plt.subplots(1, 2)
+            axarr[0].imshow(ans.detach().cpu().numpy())
+            axarr[0].set_title("fit")
+            axarr[1].imshow(self._image.cpu())
+            axarr[1].set_title("original")
 
-        buf = io.BytesIO()
-        plt.savefig(
-            buf,
-            dpi="figure",
-            format=None,
-            metadata=None,
-            bbox_inches=None,
-            pad_inches=0.1,
-            facecolor="auto",
-            edgecolor="auto",
-            backend=None,
-        )
-        buf.seek(0)
-        image = PIL.Image.open(buf)
-        image = transforms.ToTensor()(image)
+            for i in range(2):
+                axarr[i].axes.get_xaxis().set_visible(False)
+                axarr[i].axes.get_yaxis().set_visible(False)
 
-        trainer.logger.experiment.add_image(
-            f"image", image, global_step=trainer.global_step
-        )
+            buf = io.BytesIO()
+            plt.savefig(
+                buf,
+                dpi="figure",
+                format=None,
+                metadata=None,
+                bbox_inches=None,
+                pad_inches=0.1,
+                facecolor="auto",
+                edgecolor="auto",
+                backend=None,
+            )
+            buf.seek(0)
+            image = PIL.Image.open(buf)
+            image = transforms.ToTensor()(image)
+
+            trainer.logger.experiment.add_image(
+                f"image", image, global_step=trainer.global_step
+            )
