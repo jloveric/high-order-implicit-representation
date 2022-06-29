@@ -10,11 +10,14 @@ from typing import Optional, List
 from pytorch_lightning import LightningDataModule
 from PIL import Image
 from torchvision import transforms
+from high_order_layers_torch.utils import positions_from_mesh
 
 logger = logging.getLogger(__name__)
 
 
-def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
+def image_to_dataset(
+    filename: str, peano: str = False, rotations: int = 1, device="cpu"
+):
     """
     Read in an image file and return the flattened position input
     flattened output and torch array of the original image.def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
@@ -28,39 +31,16 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
     img = image.imread(filename)
 
     torch_image = torch.from_numpy(np.array(img))
-    max_size = max(torch_image.shape[0], torch_image.shape[1])
 
-    xv, yv = torch.meshgrid(
-        [torch.arange(torch_image.shape[0]), torch.arange(torch_image.shape[1])]
+    line_list2 = positions_from_mesh(
+        width=torch_image.shape[0],
+        height=torch_image.shape[1],
+        device=device,
+        rotations=rotations,
+        normalize=True,
     )
-
-    # rescale so the maximum values is between -1 and 1
-    xv = (xv / max_size) * 2 - 1
-    yv = (yv / max_size) * 2 - 1
-
-    xv = xv.reshape(xv.shape[0], xv.shape[1], 1)
-    yv = yv.reshape(yv.shape[0], yv.shape[1], 1)
-
-    if rotations == 2:
-        torch_position = torch.cat([xv, yv, (xv - yv) / 2.0, (xv + yv) / 2.0], dim=2)
-        torch_position = torch_position.reshape(-1, 4)
-    elif rotations == 1:
-        torch_position = torch.cat([xv, yv], dim=2)
-        torch_position = torch_position.reshape(-1, 2)
-    else:
-        line_list = []
-        for i in range(rotations):
-            theta = (math.pi / 2.0) * (i / rotations)
-            rot_x = math.cos(theta)
-            rot_y = math.sin(theta)
-            rot_sum = math.fabs(rot_x) + math.fabs(rot_y)
-
-            # Add the line and the line orthogonal
-            line_list.append((rot_x * xv + rot_y * yv) / rot_sum)
-            line_list.append((rot_x * xv - rot_y * yv) / rot_sum)
-
-        torch_position = torch.cat(line_list, dim=2)
-        torch_position = torch_position.reshape(-1, 2 * rotations)
+    torch_position = torch.stack(line_list2, dim=2)
+    torch_position = torch_position.reshape(-1, 2 * rotations)
 
     torch_image_flat = torch_image.reshape(-1, 3) * 2.0 / 255.0 - 1
 
