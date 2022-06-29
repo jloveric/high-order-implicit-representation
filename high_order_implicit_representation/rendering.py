@@ -18,10 +18,7 @@ default_size = [64, 64]
 
 
 def neighborhood_sample_generator(
-    model: nn.Module,
-    image: Tensor,
-    width: int,
-    outside: int,
+    model: nn.Module, image: Tensor, width: int, outside: int, device: str = "cpu"
 ):
     """
     Create a bunch of samples with size width x width and and stride
@@ -33,6 +30,7 @@ def neighborhood_sample_generator(
       width : width of the central block w x w
       outside : width of surrounding cells.  Total block has size (width+2*outside)^2 so
       the out side material is the feature set.
+      device: The device things are on.
     Returns :
       A new image with updated values assuming 2d reflection boundary conditions
     """
@@ -43,10 +41,7 @@ def neighborhood_sample_generator(
     ext_image = nn.ReflectionPad2d(padding=tpad)(image)
 
     output = image_neighborhood_dataset(
-        image=ext_image,
-        width=width,
-        outside=outside,
-        stride=width,
+        image=ext_image, width=width, outside=outside, stride=width, device=device
     )
     features = output[0]
 
@@ -102,17 +97,27 @@ class NeighborGenerator(Callback):
         for e in range(self._samples):
             images_list = []
             this_image = (
-                torch.rand(3, self._output_size[0], self._output_size[1]) * 2 - 1
+                torch.rand(
+                    3,
+                    self._output_size[0],
+                    self._output_size[1],
+                    device=pl_module.device,
+                )
+                * 2
+                - 1
             )
-            for f in range(self._frames):
+            for _ in range(self._frames):
                 this_image = neighborhood_sample_generator(
                     model=pl_module,
                     image=this_image,
+                    width=self._width,
                     outside=self._outside,
+                    device=pl_module.device,
                 )
-                images_list.append(this_image)
+                images_list.append(this_image.clone().detach())
 
-            all_images = torch.cat(images_list, dim=0)
+            all_images = torch.stack(images_list, dim=0).detach()
+            all_images = 0.5 * (all_images + 1)
 
             img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
 

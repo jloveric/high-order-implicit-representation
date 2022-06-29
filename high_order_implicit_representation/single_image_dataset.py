@@ -68,7 +68,11 @@ def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
 
 
 def image_neighborhood_dataset(
-    image: Tensor, width: int = 3, outside: int = 1, stride: int = 1
+    image: Tensor,
+    width: int = 3,
+    outside: int = 1,
+    stride: int = 1,
+    device: str = "cpu",
 ):
     """
     Args :
@@ -90,7 +94,7 @@ def image_neighborhood_dataset(
     totalx = width + 2 * outside
     totaly = totalx
 
-    edge_mask = torch.ones(totalx, totaly, dtype=bool)
+    edge_mask = torch.ones(totalx, totaly, dtype=bool, device=device)
     edge_mask[outside : (outside + width), outside : (outside + width)] = False
     block_mask = ~edge_mask
 
