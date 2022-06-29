@@ -75,6 +75,16 @@ def neighborhood_sample_generator(
 
     reduced_size = [math.ceil(ni / width) * width, math.ceil(nj / width) * width]
 
+    """
+    print(
+        "image_size",
+        image.shape,
+        "reduces_size",
+        reduced_size,
+        "ext_image_size",
+        ext_image.shape,
+    )
+    """
     # convert targets back into image
     result = nn.functional.fold(
         input=targets,
@@ -83,8 +93,11 @@ def neighborhood_sample_generator(
         stride=width,
     )
 
+    first_good = width + outside
     return result.squeeze(0)[
-        :, tpad : (tpad + image.shape[1]), tpad : (tpad + image.shape[2])
+        :,
+        first_good : (first_good + image.shape[1]),
+        first_good : (first_good + image.shape[2]),
     ]
 
 
@@ -146,81 +159,6 @@ class NeighborGenerator(Callback):
                     torch.tensor(img).permute(2, 0, 1),
                     global_step=trainer.global_step,
                 )
-
-
-"""
-EXAMPLE FROM PDE
-def generate_images(model: nn.Module, save_to: str = None, layer_type: str = None):
-
-    model.eval()
-    inputs = pde_grid().detach().to(model.device)
-    y_hat = model(inputs).detach().cpu().numpy()
-    outputs = y_hat.reshape(100, 100, 3)
-
-    names = ["Density", "Velocity", "Pressure"]
-
-    image_list = []
-    for j, name in enumerate(names):
-
-        plt.figure(j + 1)
-        fig, (ax0, ax1) = plt.subplots(2, 1)
-
-        # The outputs are density, momentum and energy
-        # so each of the components 0, 1, 2 represents
-        # on of those quantities
-        c = ax0.pcolor(outputs[:, :, j])
-        ax0.set_xlabel("x")
-        ax0.set_ylabel("time")
-
-        for i in range(0, 100, 20):
-            d = ax1.plot(outputs[:, i, j], label=f"t={i}")
-
-            ax1.set_xlabel("x")
-            ax1.set_ylabel(f"{name}")
-
-        ax1.legend()
-
-        ax0.set_title(f"{name} with {layer_type} layers")
-        plt.xlabel("x")
-
-        if save_to == "file":
-            this_path = f"{hydra.utils.get_original_cwd()}"
-            plt.savefig(
-                f"{this_path}/images/{name}-{layer_type}",
-                dpi="figure",
-                format=None,
-                metadata=None,
-                bbox_inches=None,
-                pad_inches=0.1,
-                facecolor="auto",
-                edgecolor="auto",
-                backend=None,
-            )
-        elif save_to == "memory":
-            buf = io.BytesIO()
-            plt.savefig(
-                buf,
-                dpi="figure",
-                format=None,
-                metadata=None,
-                bbox_inches=None,
-                pad_inches=0.1,
-                facecolor="auto",
-                edgecolor="auto",
-                backend=None,
-            )
-            buf.seek(0)
-            image = PIL.Image.open(buf)
-            image = transforms.ToTensor()(image)
-            image_list.append(image)
-
-    if save_to != "memory":
-        plt.show()
-    else:
-        return image_list
-
-    return None
-"""
 
 
 class ImageGenerator(Callback):

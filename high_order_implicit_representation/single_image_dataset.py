@@ -66,6 +66,7 @@ def image_neighborhood_dataset(
     px = image.shape[1]
     py = image.shape[2]
 
+    # maximum x and y where a block can start
     max_x = px - (width + 2 * outside)
     max_y = py - (width + 2 * outside)
     lastx = max_x
@@ -75,13 +76,20 @@ def image_neighborhood_dataset(
     totaly = totalx
 
     edge_mask = torch.ones(totalx, totaly, dtype=bool, device=device)
+
+    # Everything inside is false
     edge_mask[outside : (outside + width), outside : (outside + width)] = False
+
+    # Everything inside is true
     block_mask = ~edge_mask
 
     edge_indexes = edge_mask.flatten()
     block_indexes = block_mask.flatten()
 
     image = image.unsqueeze(0)
+
+    # If totalx and stride don't exactly fit into the size
+    # of the object you'll end up truncating.
     patches = (
         image.unfold(2, totalx, stride)
         .unfold(3, totaly, stride)
@@ -96,6 +104,7 @@ def image_neighborhood_dataset(
     patch_block = patch_block.reshape(patch_block.shape[0] * patch_block.shape[1], -1)
     patch_edge = patch_edge.reshape(patch_edge.shape[0] * patch_edge.shape[1], -1)
 
+    # Patches should be returned in the order [H*W,C,block_data]
     return patch_edge, patch_block, image.squeeze(0), lastx, lasty
 
 
