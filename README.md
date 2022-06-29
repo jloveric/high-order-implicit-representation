@@ -39,7 +39,7 @@ python examples/implicit_images.py -m mlp.hidden.width=40 mlp.hidden.layers=1 lr
 # Implicit Neighborhoods
 Train interpolator / extrapolator
 ```
-python examples/implicit_neighborhood.py mlp.hidden.width=10 mlp.hidden.layers=2 lr=1e-3 mlp.n=3 mlp.periodicity=2.0 mlp.layer_type=continuous mlp.hidden.segments=2 mlp.input.segments=100 mlp.output.segments=2 batch_size=256
+python examples/implicit_neighborhood.py mlp.hidden.width=50 mlp.hidden.layers=2 lr=1e-3 mlp.n=2 mlp.periodicity=2.0 mlp.layer_type=continuous mlp.hidden.segments=2 mlp.input.segments=50 mlp.output.segments=2 batch_size=256
 ```
 create output with trained filter
 ```

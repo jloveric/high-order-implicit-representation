@@ -34,8 +34,16 @@ def run_implicit_neighborhood(cfg: DictConfig):
             filenames=full_path, width=3, outside=3, batch_size=cfg.batch_size
         )
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
+
+        # Choose an output size that evenly splits the full block width+2*outside
+        # So as not to see artifacts from the boundary.
         image_generator = NeighborGenerator(
-            samples=5, frames=10, output_size=[120, 120], width=3, outside=3
+            samples=5,
+            frames=25,
+            output_size=[90, 90],
+            width=3,
+            outside=3,
+            batch_size=cfg.batch_size // 8,
         )
         trainer = Trainer(
             max_epochs=cfg.max_epochs,

@@ -10,15 +10,25 @@ import logging
 from torch import nn
 from high_order_implicit_representation.single_image_dataset import (
     image_neighborhood_dataset,
+    image_to_dataset,
 )
 import math
+import matplotlib.pyplot as plt
+import io
+import PIL
+from torchvision import transforms
 
 logger = logging.getLogger(__name__)
 default_size = [64, 64]
 
 
 def neighborhood_sample_generator(
-    model: nn.Module, image: Tensor, width: int, outside: int, device: str = "cpu"
+    model: nn.Module,
+    image: Tensor,
+    width: int,
+    outside: int,
+    batch_size: int = 256,
+    device: str = "cpu",
 ):
     """
     Create a bunch of samples with size width x width and and stride
@@ -53,7 +63,13 @@ def neighborhood_sample_generator(
     ni = imax - total_size + 1
     nj = jmax - total_size + 1
 
-    targets = model(features)
+    target_list = []
+    for batch in range((len(features) + batch_size) // batch_size):
+        target_list.append(
+            model(features[batch * batch_size : (batch + 1) * batch_size])
+        )
+    targets = torch.cat(target_list)
+
     targets = targets.permute(1, 0)
     targets = targets.unsqueeze(0)  # one batch
 
@@ -80,6 +96,7 @@ class NeighborGenerator(Callback):
         output_size: List[int] = default_size,
         width=3,
         outside=1,
+        batch_size: int = 256,
     ) -> None:
         super().__init__()
         self._samples = samples
@@ -87,6 +104,7 @@ class NeighborGenerator(Callback):
         self._outside = outside
         self._output_size = output_size
         self._frames = frames
+        self._batch_size = batch_size
 
     @rank_zero_only
     def on_train_epoch_end(
@@ -107,14 +125,16 @@ class NeighborGenerator(Callback):
                 - 1
             )
             for _ in range(self._frames):
-                this_image = neighborhood_sample_generator(
+                new_image = neighborhood_sample_generator(
                     model=pl_module,
                     image=this_image,
                     width=self._width,
                     outside=self._outside,
                     device=pl_module.device,
+                    batch_size=self._batch_size,
                 )
-                images_list.append(this_image.clone().detach())
+                this_image = 0.5 * (this_image + new_image)
+                images_list.append(this_image.cpu().clone().detach())
 
             all_images = torch.stack(images_list, dim=0).detach()
             all_images = 0.5 * (all_images + 1)
@@ -126,3 +146,122 @@ class NeighborGenerator(Callback):
                 torch.tensor(img).permute(2, 0, 1),
                 global_step=trainer.global_step,
             )
+
+
+"""
+EXAMPLE FROM PDE
+def generate_images(model: nn.Module, save_to: str = None, layer_type: str = None):
+
+    model.eval()
+    inputs = pde_grid().detach().to(model.device)
+    y_hat = model(inputs).detach().cpu().numpy()
+    outputs = y_hat.reshape(100, 100, 3)
+
+    names = ["Density", "Velocity", "Pressure"]
+
+    image_list = []
+    for j, name in enumerate(names):
+
+        plt.figure(j + 1)
+        fig, (ax0, ax1) = plt.subplots(2, 1)
+
+        # The outputs are density, momentum and energy
+        # so each of the components 0, 1, 2 represents
+        # on of those quantities
+        c = ax0.pcolor(outputs[:, :, j])
+        ax0.set_xlabel("x")
+        ax0.set_ylabel("time")
+
+        for i in range(0, 100, 20):
+            d = ax1.plot(outputs[:, i, j], label=f"t={i}")
+
+            ax1.set_xlabel("x")
+            ax1.set_ylabel(f"{name}")
+
+        ax1.legend()
+
+        ax0.set_title(f"{name} with {layer_type} layers")
+        plt.xlabel("x")
+
+        if save_to == "file":
+            this_path = f"{hydra.utils.get_original_cwd()}"
+            plt.savefig(
+                f"{this_path}/images/{name}-{layer_type}",
+                dpi="figure",
+                format=None,
+                metadata=None,
+                bbox_inches=None,
+                pad_inches=0.1,
+                facecolor="auto",
+                edgecolor="auto",
+                backend=None,
+            )
+        elif save_to == "memory":
+            buf = io.BytesIO()
+            plt.savefig(
+                buf,
+                dpi="figure",
+                format=None,
+                metadata=None,
+                bbox_inches=None,
+                pad_inches=0.1,
+                facecolor="auto",
+                edgecolor="auto",
+                backend=None,
+            )
+            buf.seek(0)
+            image = PIL.Image.open(buf)
+            image = transforms.ToTensor()(image)
+            image_list.append(image)
+
+    if save_to != "memory":
+        plt.show()
+    else:
+        return image_list
+
+    return None
+"""
+
+
+class ImageGenerator(Callback):
+    def __init__(self, filename, rotations):
+        _, self._inputs, self._image = image_to_dataset(filename, rotations=rotations)
+
+    @rank_zero_only
+    def on_train_epoch_end(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ) -> None:
+        pl_module.eval()
+
+        y_hat = pl_module(self._inputs)
+
+        ans = y_hat.reshape(
+            self._image.shape[0], self._image.shape[1], self._image.shape[2]
+        )
+        ans = 0.5 * (ans + 1.0)
+
+        f, axarr = plt.subplots(1, 2)
+        axarr[0].imshow(ans.detach().numpy())
+        axarr[0].set_title("fit")
+        axarr[1].imshow(self._image)
+        axarr[1].set_title("original")
+
+        buf = io.BytesIO()
+        plt.savefig(
+            buf,
+            dpi="figure",
+            format=None,
+            metadata=None,
+            bbox_inches=None,
+            pad_inches=0.1,
+            facecolor="auto",
+            edgecolor="auto",
+            backend=None,
+        )
+        buf.seek(0)
+        image = PIL.Image.open(buf)
+        image = transforms.ToTensor()(image)
+
+        trainer.logger.experiment.add_image(
+            f"image", image, global_step=trainer.global_step
+        )
