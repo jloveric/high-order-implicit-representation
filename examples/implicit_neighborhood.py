@@ -40,7 +40,7 @@ def run_implicit_neighborhood(cfg: DictConfig):
         image_generator = NeighborGenerator(
             samples=5,
             frames=25,
-            output_size=[90, 90],
+            output_size=[180, 180],
             width=3,
             outside=3,
             batch_size=cfg.batch_size // 8,
