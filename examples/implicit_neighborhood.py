@@ -35,7 +35,7 @@ def run_implicit_neighborhood(cfg: DictConfig):
         )
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
         image_generator = NeighborGenerator(
-            samples=5, frames=10, output_size=[60, 60], width=3, outside=3
+            samples=5, frames=10, output_size=[120, 120], width=3, outside=3
         )
         trainer = Trainer(
             max_epochs=cfg.max_epochs,
