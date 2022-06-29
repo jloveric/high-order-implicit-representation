@@ -18,7 +18,6 @@ torchvision = "^0.12.0"
 hilbertcurve = "^2.0.5"
 torchsummary = "^1.5.1"
 omegaconf = "^2.2.2"
-stripe-layers = {git = "https://github.com/jloveric/stripe-layers", rev = "main"}
 torch-optimizer = "^0.3.0"
 high-order-layers-torch = "^1.1.10"
 
