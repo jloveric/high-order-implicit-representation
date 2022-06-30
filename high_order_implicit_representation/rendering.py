@@ -75,16 +75,6 @@ def neighborhood_sample_generator(
 
     reduced_size = [math.ceil(ni / width) * width, math.ceil(nj / width) * width]
 
-    """
-    print(
-        "image_size",
-        image.shape,
-        "reduces_size",
-        reduced_size,
-        "ext_image_size",
-        ext_image.shape,
-    )
-    """
     # convert targets back into image
     result = nn.functional.fold(
         input=targets,
@@ -99,6 +89,35 @@ def neighborhood_sample_generator(
         first_good : (first_good + image.shape[1]),
         first_good : (first_good + image.shape[2]),
     ]
+
+
+def generate_sequence(
+    model: nn.Module,
+    image: Tensor,
+    frames: int,
+    width: int,
+    outside: int,
+    batch_size: int,
+):
+    this_image = image.clone()
+    image_list = [this_image]
+    for _ in range(frames):
+        new_image = neighborhood_sample_generator(
+            model=model,
+            image=this_image,
+            width=width,
+            outside=outside,
+            device=model.device,
+            batch_size=batch_size,
+        )
+        this_image = 0.5 * (this_image + new_image)
+        torch.clamp(this_image, min=-1, max=1)
+
+        image_list.append(this_image.cpu().clone().detach())
+
+    all_images = torch.stack(image_list, dim=0).detach()
+    all_images = 0.5 * (all_images + 1)
+    return all_images
 
 
 class NeighborGenerator(Callback):
@@ -126,7 +145,6 @@ class NeighborGenerator(Callback):
         pl_module.eval()
         with torch.no_grad():
             for e in range(self._samples):
-                images_list = []
                 this_image = (
                     torch.rand(
                         3,
@@ -137,6 +155,7 @@ class NeighborGenerator(Callback):
                     * 2
                     - 1
                 )
+                """
                 for _ in range(self._frames):
                     new_image = neighborhood_sample_generator(
                         model=pl_module,
@@ -151,6 +170,15 @@ class NeighborGenerator(Callback):
 
                 all_images = torch.stack(images_list, dim=0).detach()
                 all_images = 0.5 * (all_images + 1)
+                """
+                all_images = generate_sequence(
+                    model=pl_module,
+                    image=this_image,
+                    frames=self._frames,
+                    width=self._width,
+                    outside=self._outside,
+                    batch_size=self._batch_size,
+                )
 
                 img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
 

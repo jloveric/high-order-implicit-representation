@@ -110,7 +110,6 @@ def image_neighborhood_dataset(
 
 class ImageNeighborhoodReader:
     def __init__(self, filename: str, width=3, outside=1):
-
         img = Image.open(filename)
         image = transforms.ToTensor()(img) * 2 - 1
 
@@ -146,7 +145,9 @@ class ImageNeighborhoodReader:
 class ImageNeighborhoodDataset(Dataset):
     def __init__(self, filenames: List[str], width: int = 3, outside: int = 1):
         # TODO: right now grabbing the first element
-        ind = ImageNeighborhoodReader(filenames[0], width=width, outside=outside)
+        ind = ImageNeighborhoodReader(
+            filename=filenames[0], width=width, outside=outside
+        )
         self.inputs = ind.features
         self.output = ind.targets
         self.image = ind.image
