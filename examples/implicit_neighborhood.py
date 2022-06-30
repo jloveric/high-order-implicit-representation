@@ -74,20 +74,28 @@ def run_implicit_neighborhood(cfg: DictConfig):
         logger.info(f"image_dir {image_dir}")
 
         img = Image.open(image_dir[0])
-        image = transforms.ToTensor()(img) * 2 - 1
+        image = transforms.Resize(500)(img)
+        image = transforms.ToTensor()(image) * 2 - 1
 
+        frames = 6
+        skip = 5
         all_images = generate_sequence(
             model=model,
             image=image,
-            frames=1,
+            frames=frames,
+            skip=skip,
             width=3,
             outside=3,
             batch_size=256,
         )
 
-        img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
+        nrow = int(math.sqrt(frames + 2))
+        img = make_grid(all_images, nrow=nrow).permute(1, 2, 0).cpu().numpy()
 
         plt.imshow(img)
+        ax = plt.gca()
+        ax.axes.get_xaxis().set_visible(False)
+        ax.axes.get_yaxis().set_visible(False)
         plt.show()
 
 

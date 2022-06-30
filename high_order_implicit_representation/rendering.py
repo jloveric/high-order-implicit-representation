@@ -98,10 +98,11 @@ def generate_sequence(
     width: int,
     outside: int,
     batch_size: int,
+    skip: int = 1,
 ):
     this_image = image.clone()
     image_list = [this_image]
-    for _ in range(frames):
+    for frame in range(frames):
         new_image = neighborhood_sample_generator(
             model=model,
             image=this_image,
@@ -112,10 +113,10 @@ def generate_sequence(
         )
         this_image = 0.5 * (this_image + new_image)
         torch.clamp(this_image, min=-1, max=1)
+        if frame % skip == 0:
+            image_list.append(this_image.detach().cpu().clone())
 
-        image_list.append(this_image.cpu().clone().detach())
-
-    all_images = torch.stack(image_list, dim=0).detach()
+    all_images = torch.stack(image_list, dim=0)
     all_images = 0.5 * (all_images + 1)
     return all_images
 

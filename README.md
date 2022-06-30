@@ -44,7 +44,7 @@ python examples/implicit_neighborhood.py mlp.hidden.width=50 mlp.hidden.layers=2
 ```
 create output with trained filter
 ```
-python examples/implicit_neighborhood.py train=False checkpoint=\"outputs/2022-06-29/15-22-09/lightning_logs/version_0/checkpoints/'epoch=23-step=68448.ckpt'\"
+python examples/implicit_neighborhood.py train=False checkpoint=\"outputs/2022-06-29/15-22-09/lightning_logs/version_0/checkpoints/'epoch=23-step=68448.ckpt'\" images=["images/jupiter.jpg"]
 ```
 Training on the image of the newt and applying to the image of jupiter gives
 the following results.
