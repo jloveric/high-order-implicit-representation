@@ -103,7 +103,7 @@ def generate_sequence(
     alpha=0.75,
 ):
     this_image = image.clone()
-    image_list = [this_image]
+    image_list = [this_image.cpu()]
     for frame in range(frames):
         new_image = neighborhood_sample_generator(
             model=model,

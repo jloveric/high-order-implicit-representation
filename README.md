@@ -3,6 +3,14 @@
 # Implicit Representation with High Order Layers
 Implicit representation of various things using PyTorch and high order layers.  The network uses high order layers as implemented [here](https://github.com/jloveric/high-order-layers-torch).  Implicit representation is creating a function that approximates your data (cuve fitting).  The function can be a compact representation of the original data and also provides an interpolation of that data.  Below we show example functions for images.
 
+# PIP install of library functions
+```
+pip install high-order-implicit-representation
+```
+and
+```
+poetry add high-order-implicit-representation
+```
 # Implicit Representation of Images
 
 Train a model

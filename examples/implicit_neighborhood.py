@@ -33,10 +33,22 @@ def run_implicit_neighborhood(cfg: DictConfig):
     logger.info(f"Orig working directory {hydra.utils.get_original_cwd()}")
     root_dir = hydra.utils.get_original_cwd()
 
+    # Define the width of the input and output
+    cfg.mlp.input.width = (
+        (cfg.data.width + 2 * cfg.data.outside) ** 2 - cfg.data.width**2
+    ) * 3
+
+    cfg.mlp.output.width = 3 * cfg.data.width**2
+
+    logger.info(f"input size {cfg.mlp.input.width} output size {cfg.mlp.output.width}")
+
     if cfg.train is True:
         full_path = [f"{root_dir}/{path}" for path in cfg.images]
         datamodule = ImageNeighborhoodDataModule(
-            filenames=full_path, width=3, outside=3, batch_size=cfg.batch_size
+            filenames=full_path,
+            width=cfg.data.width,
+            outside=cfg.data.outside,
+            batch_size=cfg.batch_size,
         )
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
 
@@ -46,9 +58,9 @@ def run_implicit_neighborhood(cfg: DictConfig):
             samples=5,
             frames=25,
             output_size=[180, 180],
-            width=3,
-            outside=3,
-            batch_size=cfg.batch_size // 8,
+            width=cfg.data.width,
+            outside=cfg.data.outside,
+            batch_size=cfg.batch_size,
         )
         trainer = Trainer(
             max_epochs=cfg.max_epochs,
@@ -57,9 +69,10 @@ def run_implicit_neighborhood(cfg: DictConfig):
         )
         model = Net(cfg)
         trainer.fit(model, datamodule=datamodule)
-        logger.info("testing")
 
+        logger.info("testing")
         trainer.test(model, datamodule=datamodule)
+
         logger.info("finished testing")
         logger.info(f"best check_point {trainer.checkpoint_callback.best_model_path}")
     else:
@@ -97,14 +110,13 @@ def run_implicit_neighborhood(cfg: DictConfig):
             image=image,
             frames=frames,
             skip=skip,
-            width=3,
-            outside=3,
-            batch_size=256,
+            width=cfg.data.width,
+            outside=cfg.data.outside,
+            batch_size=cfg.batch_size,
         )
-        logger.info("Finished generating")
+
         nrow = int(math.sqrt(frames + 2))
         img = make_grid(all_images, nrow=8).permute(1, 2, 0).cpu().numpy()
-        logger.info("Finished making grid")
 
         plt.imshow(img)
         ax = plt.gca()

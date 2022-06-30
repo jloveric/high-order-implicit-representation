@@ -13,14 +13,22 @@ mlp:
   scale: 2.0
   input:
     segments: 1
-    width: 216 # The number (9*9-3*3)*3
+    width: null # Computed after loading((width+2*outside)^2-width^2)*channels (width and outside are from data.width and data.outside)
   output:
     segments: 1
-    width: 27
+    width: null # Computed after loading width*width*channels (width is from data.width)
   hidden:
     segments: 2
     layers: 1
     width: 10
+
+data:
+  # width of the inner square block used as the target
+  # with width=3 3x3*channels blocks are the target values
+  width: 3
+  # the padding used as the features. with a 3x3 inner block
+  # the padding size would be  (9*9-3*3)*channels
+  outside: 3
 
 max_epochs: 50
 gpus: 1
