@@ -69,16 +69,29 @@ def run_implicit_neighborhood(cfg: DictConfig):
         logger.info(f"checkpoint_path {checkpoint_path}")
         model = Net.load_from_checkpoint(checkpoint_path)
         model.eval()
-        image_dir = [f"{hydra.utils.get_original_cwd()}/{f}" for f in cfg.images]
 
-        logger.info(f"image_dir {image_dir}")
+        if cfg.images is not None:
+            image_dir = [f"{hydra.utils.get_original_cwd()}/{f}" for f in cfg.images]
 
-        img = Image.open(image_dir[0])
-        image = transforms.Resize(500)(img)
-        image = transforms.ToTensor()(image) * 2 - 1
+            logger.info(f"image_dir {image_dir}")
+            image = Image.open(image_dir[0])
+            # image = transforms.Resize(500)(image)
+            image = transforms.ToTensor()(image) * 2 - 1
+        else:
+            # start out with noise
+            image = (
+                torch.rand(
+                    3,
+                    500,
+                    500,
+                    device=model.device,
+                )
+                * 2
+                - 1
+            )
 
-        frames = 6
-        skip = 5
+        frames = 101
+        skip = 25
         all_images = generate_sequence(
             model=model,
             image=image,
@@ -88,9 +101,10 @@ def run_implicit_neighborhood(cfg: DictConfig):
             outside=3,
             batch_size=256,
         )
-
+        logger.info("Finished generating")
         nrow = int(math.sqrt(frames + 2))
-        img = make_grid(all_images, nrow=nrow).permute(1, 2, 0).cpu().numpy()
+        img = make_grid(all_images, nrow=8).permute(1, 2, 0).cpu().numpy()
+        logger.info("Finished making grid")
 
         plt.imshow(img)
         ax = plt.gca()

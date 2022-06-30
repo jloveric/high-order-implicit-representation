@@ -44,46 +44,47 @@ def neighborhood_sample_generator(
     Returns :
       A new image with updated values assuming 2d reflection boundary conditions
     """
+    with torch.no_grad():
+        # Adding extra padding to the boundary to account for edge cases.
+        tpad = 2 * outside + width
 
-    # Adding extra padding to the boundary to account for edge cases.
-    tpad = 2 * outside + width
+        ext_image = nn.ReflectionPad2d(padding=tpad)(image)
 
-    ext_image = nn.ReflectionPad2d(padding=tpad)(image)
-
-    output = image_neighborhood_dataset(
-        image=ext_image, width=width, outside=outside, stride=width, device=device
-    )
-    features = output[0]
-
-    total_size = width + 2 * outside
-
-    imax, jmax = ext_image.shape[1:3]
-
-    # Extents for starting new block of size total_size
-    ni = imax - total_size + 1
-    nj = jmax - total_size + 1
-
-    target_list = []
-    for batch in range((len(features) + batch_size) // batch_size):
-        target_list.append(
-            model(features[batch * batch_size : (batch + 1) * batch_size])
+        output = image_neighborhood_dataset(
+            image=ext_image, width=width, outside=outside, stride=width, device=device
         )
-    targets = torch.cat(target_list)
+        features = output[0]
 
-    targets = targets.permute(1, 0)
-    targets = targets.unsqueeze(0)  # one batch
+        total_size = width + 2 * outside
 
-    reduced_size = [math.ceil(ni / width) * width, math.ceil(nj / width) * width]
+        imax, jmax = ext_image.shape[1:3]
 
-    # convert targets back into image
-    result = nn.functional.fold(
-        input=targets,
-        output_size=reduced_size,
-        kernel_size=width,
-        stride=width,
-    )
+        # Extents for starting new block of size total_size
+        ni = imax - total_size + 1
+        nj = jmax - total_size + 1
 
-    first_good = width + outside
+        target_list = []
+        for batch in range((len(features) + batch_size) // batch_size):
+            target_list.append(
+                model(features[batch * batch_size : (batch + 1) * batch_size])
+            )
+        targets = torch.cat(target_list)
+
+        targets = targets.permute(1, 0)
+        targets = targets.unsqueeze(0)  # one batch
+
+        reduced_size = [math.ceil(ni / width) * width, math.ceil(nj / width) * width]
+
+        # convert targets back into image
+        result = nn.functional.fold(
+            input=targets,
+            output_size=reduced_size,
+            kernel_size=width,
+            stride=width,
+        )
+
+        first_good = width + outside
+
     return result.squeeze(0)[
         :,
         first_good : (first_good + image.shape[1]),
@@ -99,6 +100,7 @@ def generate_sequence(
     outside: int,
     batch_size: int,
     skip: int = 1,
+    alpha=0.75,
 ):
     this_image = image.clone()
     image_list = [this_image]
@@ -111,7 +113,7 @@ def generate_sequence(
             device=model.device,
             batch_size=batch_size,
         )
-        this_image = 0.5 * (this_image + new_image)
+        this_image = alpha * this_image + (1 - alpha) * new_image
         torch.clamp(this_image, min=-1, max=1)
         if frame % skip == 0:
             image_list.append(this_image.detach().cpu().clone())
@@ -130,6 +132,7 @@ class NeighborGenerator(Callback):
         width=3,
         outside=1,
         batch_size: int = 256,
+        alpha: float = 0.75,
     ) -> None:
         super().__init__()
         self._samples = samples
@@ -138,6 +141,7 @@ class NeighborGenerator(Callback):
         self._output_size = output_size
         self._frames = frames
         self._batch_size = batch_size
+        self._alpha = alpha
 
     @rank_zero_only
     def on_train_epoch_end(
@@ -156,22 +160,7 @@ class NeighborGenerator(Callback):
                     * 2
                     - 1
                 )
-                """
-                for _ in range(self._frames):
-                    new_image = neighborhood_sample_generator(
-                        model=pl_module,
-                        image=this_image,
-                        width=self._width,
-                        outside=self._outside,
-                        device=pl_module.device,
-                        batch_size=self._batch_size,
-                    )
-                    this_image = 0.5 * (this_image + new_image)
-                    images_list.append(this_image.cpu().clone().detach())
 
-                all_images = torch.stack(images_list, dim=0).detach()
-                all_images = 0.5 * (all_images + 1)
-                """
                 all_images = generate_sequence(
                     model=pl_module,
                     image=this_image,
@@ -179,6 +168,7 @@ class NeighborGenerator(Callback):
                     width=self._width,
                     outside=self._outside,
                     batch_size=self._batch_size,
+                    alpha=self._alpha,
                 )
 
                 img = make_grid(all_images).permute(1, 2, 0).cpu().numpy()
