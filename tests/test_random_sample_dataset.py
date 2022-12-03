@@ -25,7 +25,7 @@ def test_radial_random_image_sample_dataset_specific():
         )
     )
 
-    features, targets = this_iter.next()
+    features, targets = next(this_iter)
     print('features', features)
     print('targets', targets)
     assert features.shape[0] == targets.shape[0] == 2048
@@ -65,7 +65,7 @@ def test_random_image_sample_dataset_specific():
         )
     )
 
-    features, targets = this_iter.next()
+    features, targets = next(this_iter)
 
     print("features", features)
     print("targets", targets)
@@ -95,7 +95,7 @@ def test_random_image_sample_dataset(num_feature_pixels, num_target_pixels, batc
         )
     )
 
-    features, targets = this_iter.next()
+    features, targets = next(this_iter)
 
     assert features.shape[0] == targets.shape[0]
     assert features.shape[1] == num_feature_pixels
@@ -119,7 +119,7 @@ def test_random_image_sample_datamodule():
 
     dataloader = dataset.train_dataloader()
 
-    features, targets = iter(dataloader).next()
+    features, targets = next(iter(dataloader))
 
     assert features.shape[1] == 25
     assert targets.shape[1] == 1
