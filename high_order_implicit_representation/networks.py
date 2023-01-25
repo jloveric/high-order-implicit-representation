@@ -49,8 +49,11 @@ class Net(LightningModule):
             hidden_width=cfg.mlp.hidden.width,
             hidden_layers=cfg.mlp.hidden.layers,
             hidden_segments=cfg.mlp.hidden.segments,
-            normalization=torch.nn.LazyBatchNorm1d,
+            normalization=MaxAbsNormalization #torch.nn.LazyBatchNorm1d,
         )
+        
+        initialize_network_polynomial_layers(self.model, max_slope=1.0, max_offset=0.0)
+
         self.loss = nn.MSELoss()
 
     def forward(self, x):
