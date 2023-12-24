@@ -19,6 +19,7 @@ from pytorch_lightning.callbacks import EarlyStopping, LearningRateMonitor
 from high_order_implicit_representation.random_sample_dataset import (
     RandomImageSampleDataModule,
 )
+from high_order_layers_torch.sparse_optimizers import SparseLion
 import torch_optimizer as alt_optim
 
 # from high_order_mlp import HighOrderMLP
@@ -86,12 +87,18 @@ class Net(LightningModule):
                 weight_decay=self.cfg.optimizer.weight_decay,
                 hessian_power=self.cfg.optimizer.hessian_power,
             )
-        elif self.cfg.optimizer.name == "adam":
+        elif self.cfg.optimizer.name in ["adam", "sparse_lion"]:
 
-            optimizer = optim.Adam(
-                params=self.parameters(),
-                lr=self.cfg.optimizer.lr,
-            )
+            if self.cfg.optimizer.name == "adam" :
+                optimizer = optim.Adam(
+                    params=self.parameters(),
+                    lr=self.cfg.optimizer.lr,
+                )
+            elif self.cfg.optimizer.name == "sparse_lion" :
+                optimizer = SparseLion(
+                    params=self.parameters(),
+                    lr=self.cfg.optimizer.lr,
+                )
 
             reduce_on_plateau = False
             if self.cfg.optimizer.scheduler == "plateau":
