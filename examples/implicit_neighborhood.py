@@ -64,7 +64,8 @@ def run_implicit_neighborhood(cfg: DictConfig):
         )
         trainer = Trainer(
             max_epochs=cfg.max_epochs,
-            gpus=cfg.gpus,
+            devices=cfg.gpus,
+            accelerator=cfg.accelerator,
             callbacks=[lr_monitor, image_generator],
         )
         model = Net(cfg)

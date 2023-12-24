@@ -23,6 +23,7 @@ mlp:
 
 max_epochs: 50
 gpus: 1
+accelerator : cuda
 lr: 1e-3
 batch_size: 256
 

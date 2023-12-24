@@ -76,7 +76,8 @@ def run_implicit_images(cfg: DictConfig):
         trainer = Trainer(
             callbacks=[early_stopping, lr_monitor, image_sampler],
             max_epochs=cfg.max_epochs,
-            gpus=cfg.gpus,
+            devices=cfg.gpus,
+            accelerator=cfg.accelerator,
             logger=tb_logger,
         )
 

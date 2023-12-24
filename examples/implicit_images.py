@@ -38,11 +38,9 @@ def run_implicit_images(cfg: DictConfig):
         )
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
         trainer = Trainer(
-            max_epochs=cfg.max_epochs, gpus=cfg.gpus, callbacks=[lr_monitor]
-        )
-        trainer = Trainer(
             max_epochs=cfg.max_epochs,
-            gpus=cfg.gpus,
+            devices=cfg.gpus,
+            accelerator=cfg.accelerator,
             callbacks=[lr_monitor, image_generator],
         )
         model = Net(cfg)

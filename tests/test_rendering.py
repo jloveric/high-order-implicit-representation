@@ -125,7 +125,7 @@ def test_neighbor_generator():
     model = Net(cfg)
     trainer = Trainer(
         max_epochs=cfg.max_epochs,
-        gpus=cfg.gpus,
+        accelerator='cpu',
     )
 
     # Just make sure this runs

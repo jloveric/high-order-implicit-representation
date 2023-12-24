@@ -28,6 +28,7 @@ image_size: 64
 
 max_epochs: 50
 gpus: 1
+accelerator: cuda
 batch_size: 256
 
 # Are you training? Otherwise plot the result
