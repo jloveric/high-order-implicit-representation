@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "high-order-implicit-representation"
-version = "0.2.0"
+version = "1.0.0"
 description = ""
 authors = ["John Loverich <john.loverich@gmail.com>"]
 license = "MIT"
