@@ -3,6 +3,12 @@
 
 import pandas as pd
 from sentence_transformers import SentenceTransformer
+from PIL import Image
+import numpy as np
+import io
+
+
+
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -23,4 +29,22 @@ for sentence, embedding in zip(sentences, sentence_embeddings):
     print("")
 
 ans = pd.read_parquet("train-00000-of-00645-b66ac786bf6fb553.parquet")
-print('ans', ans)
+data = ans.iloc[0]
+
+print('ans', data)
+print(ans['caption'][0])
+jpg_0 = ans['jpg_0'][0]
+jpg_1 = ans['jpg_1'][0]
+
+img = Image.open(io.BytesIO(jpg_0))
+arr = np.asarray(img)
+print('arr', arr)
+
+"""
+from torchdata.datapipes.iter import FileLister
+import torcharrow.dtypes as dt
+DTYPE = dt.Struct([dt.Field("Values", dt.int32)])
+ource_dp = FileLister(".", masks="df*.parquet")
+parquet_df_dp = source_dp.load_parquet_as_df(dtype=DTYPE)
+list(parquet_df_dp)[0]
+"""
