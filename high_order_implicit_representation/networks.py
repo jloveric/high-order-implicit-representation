@@ -144,7 +144,7 @@ class GenerativeNetwork(nn.Module):
         normalization: Any = None,
         layer_type: str = "continuous",
     ):
-
+        super().__init__()
         self.text_layer = high_order_fc_layers(
             layer_type="polynomial",  # I want this to be polynomial or a single segment
             n=2,
