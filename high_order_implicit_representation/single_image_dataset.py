@@ -49,9 +49,7 @@ def image_to_dataset(
     return torch_image_flat, torch_position, torch_image
 
 
-def simple_image_to_dataset(
-    image: Tensor, device="cpu"
-):
+def simple_image_to_dataset(image: Tensor, device="cpu"):
     """
     Read in an image file and return the flattened position input
     flattened output and torch array of the original image.def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
@@ -71,14 +69,13 @@ def simple_image_to_dataset(
         rotations=rotations,
         normalize=True,
     )
-    
+
     torch_position = torch.stack(line_list2, dim=2)
     torch_position = torch_position.reshape(-1, 2 * rotations)
 
     torch_image_flat = image.reshape(-1, 3) * 2.0 / 255.0 - 1
 
     return torch_image_flat, torch_position, image
-
 
 
 def image_neighborhood_dataset(
@@ -338,15 +335,14 @@ class PickAPic:
     def __call__(self):
         for file in self.files:
             data = pd.read_parquet(file)
-            
+
             for index, row in data.iterrows():
-                caption = row['caption']
+                caption = row["caption"]
 
                 jpg_0 = row["jpg_0"]
                 img = Image.open(io.BytesIO(jpg_0))
                 arr = np.asarray(img)
                 yield caption, torch.from_numpy(arr)
-
 
                 jpg_1 = row["jpg_1"]
                 img = Image.open(io.BytesIO(jpg_1))
@@ -364,5 +360,6 @@ class Text2ImageDataset(Dataset):
     def __getitem__(self, idx):
         # I'm totally ignoring the index
         caption, image = self.dataset()
-
-
+        flattened_image, flattened_position = simple_image_to_dataset(image)
+        for index, rgb in enumerate(flattened_image):
+            yield caption, flattened_position[index], rgb

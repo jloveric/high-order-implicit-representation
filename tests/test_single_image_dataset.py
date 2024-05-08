@@ -32,3 +32,6 @@ def test_image_neighborhood_reader():
     assert ind.lastx == 27
     assert ind.lasty == 27
     assert ind.image.shape == torch.Size([3, 32, 32])
+
+def test_parquet_dataset():
+    pass
