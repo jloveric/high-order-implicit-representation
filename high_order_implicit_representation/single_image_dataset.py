@@ -11,6 +11,8 @@ from pytorch_lightning import LightningDataModule
 from PIL import Image
 from torchvision import transforms
 from high_order_layers_torch.utils import positions_from_mesh
+import pandas as pd
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,38 @@ def image_to_dataset(
     torch_image_flat = torch_image.reshape(-1, 3) * 2.0 / 255.0 - 1
 
     return torch_image_flat, torch_position, torch_image
+
+
+def simple_image_to_dataset(
+    image: Tensor, device="cpu"
+):
+    """
+    Read in an image file and return the flattened position input
+    flattened output and torch array of the original image.def image_to_dataset(filename: str, peano: str = False, rotations: int = 1):
+
+    Args :
+        image : image as pytorch tensor
+    Returns :
+        flattened image [width*heigh, rgb], flattened position vectory
+        [width*height, 2] and torch tensor of original image.
+    """
+
+    rotations = 1
+    line_list2 = positions_from_mesh(
+        width=image.shape[0],
+        height=image.shape[1],
+        device=device,
+        rotations=rotations,
+        normalize=True,
+    )
+    
+    torch_position = torch.stack(line_list2, dim=2)
+    torch_position = torch_position.reshape(-1, 2 * rotations)
+
+    torch_image_flat = image.reshape(-1, 3) * 2.0 / 255.0 - 1
+
+    return torch_image_flat, torch_position, image
+
 
 
 def image_neighborhood_dataset(
@@ -295,3 +329,40 @@ class ImageDataModule(LightningDataModule):
             num_workers=self._num_workers,
             drop_last=True,
         )
+
+
+class PickAPic:
+    def __init__(self, files: list[str]):
+        self.files = files
+
+    def __call__(self):
+        for file in self.files:
+            data = pd.read_parquet(file)
+            
+            for index, row in data.iterrows():
+                caption = row['caption']
+
+                jpg_0 = row["jpg_0"]
+                img = Image.open(io.BytesIO(jpg_0))
+                arr = np.asarray(img)
+                yield caption, torch.from_numpy(arr)
+
+
+                jpg_1 = row["jpg_1"]
+                img = Image.open(io.BytesIO(jpg_1))
+                arr = np.asarray(img)
+                yield caption, torch.from_numpy(arr)
+
+
+class Text2ImageDataset(Dataset):
+    def __init__(self, filenames: List[str], rotations: int = 1):
+        self.dataset = PickAPic(files=filenames)
+
+    def __len__(self):
+        return len(self.output)
+
+    def __getitem__(self, idx):
+        # I'm totally ignoring the index
+        caption, image = self.dataset()
+
+

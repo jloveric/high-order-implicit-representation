@@ -40,6 +40,9 @@ img = Image.open(io.BytesIO(jpg_0))
 arr = np.asarray(img)
 print('arr', arr)
 
+for index, row in ans.iterrows() :
+    print('row', row)
+
 """
 from torchdata.datapipes.iter import FileLister
 import torcharrow.dtypes as dt
