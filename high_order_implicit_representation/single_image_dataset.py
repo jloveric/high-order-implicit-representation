@@ -337,13 +337,14 @@ class PickAPic:
             data = pd.read_parquet(file)
 
             for index, row in data.iterrows():
+                print('index', index)
                 caption = row["caption"]
-
+                print('caption', caption)
                 jpg_0 = row["jpg_0"]
                 img = Image.open(io.BytesIO(jpg_0))
                 arr = np.asarray(img)
                 yield caption, torch.from_numpy(arr)
-
+                print('again')
                 jpg_1 = row["jpg_1"]
                 img = Image.open(io.BytesIO(jpg_1))
                 arr = np.asarray(img)
@@ -352,14 +353,23 @@ class PickAPic:
 
 class Text2ImageDataset(Dataset):
     def __init__(self, filenames: List[str], rotations: int = 1):
+        super().__init__()
         self.dataset = PickAPic(files=filenames)
 
     def __len__(self):
-        return len(self.output)
+        return int(1e12)
+
+    def gen_data(self) :
+
+        caption, image = next(self.dataset())
+        print('got here')
+        flattened_image, flattened_position, image = simple_image_to_dataset(image)
+        for index, rgb in enumerate(flattened_image):
+            yield caption, flattened_position[index], rgb
 
     def __getitem__(self, idx):
         # I'm totally ignoring the index
-        caption, image = self.dataset()
-        flattened_image, flattened_position = simple_image_to_dataset(image)
-        for index, rgb in enumerate(flattened_image):
-            yield caption, flattened_position[index], rgb
+        #ans = self.dataset()
+        #print('ans', ans)
+        
+        return next(self.gen_data())
