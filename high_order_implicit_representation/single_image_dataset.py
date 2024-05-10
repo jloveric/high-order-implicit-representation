@@ -339,14 +339,14 @@ class PickAPic:
             data = pd.read_parquet(file)
 
             for index, row in data.iterrows():
-                print('index', index)
+                print("index", index)
                 caption = row["caption"]
-                print('caption', caption)
+                print("caption", caption)
                 jpg_0 = row["jpg_0"]
                 img = Image.open(io.BytesIO(jpg_0))
                 arr = np.asarray(img)
                 yield caption, torch.from_numpy(arr)
-                print('again')
+                print("again")
                 jpg_1 = row["jpg_1"]
                 img = Image.open(io.BytesIO(jpg_1))
                 arr = np.asarray(img)
@@ -354,28 +354,70 @@ class PickAPic:
 
 
 class Text2ImageDataset(Dataset):
-    def __init__(self, filenames: List[str], rotations: int = 1):
+    def __init__(self, filenames: List[str]):
         super().__init__()
         self.dataset = PickAPic(files=filenames)
         self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
 
-
     def __len__(self):
         return int(1e12)
 
-    def gen_data(self) :
+    def gen_data(self):
 
         caption, image = next(self.dataset())
         caption_embedding = self.sentence_model.encode(caption)
 
-        print('got here')
+        print("got here")
         flattened_image, flattened_position, image = simple_image_to_dataset(image)
         for index, rgb in enumerate(flattened_image):
             yield caption_embedding, flattened_position[index], rgb
 
     def __getitem__(self, idx):
         # I'm totally ignoring the index
-        #ans = self.dataset()
-        #print('ans', ans)
-        
+        # ans = self.dataset()
+        # print('ans', ans)
+
         return next(self.gen_data())
+
+
+class Text2ImageDataModule(LightningDataModule):
+    def __init__(self, filenames: List[str], num_workers, batch_size, pin_memory):
+        super().__init__()
+        self._filenames = filenames
+        self._shuffle = False
+        self._num_workers = num_workers
+        self._batch_size = batch_size
+        self._pin_memory = pin_memory
+
+    def setup(self, stage: Optional[str] = None):
+
+        self._train_dataset = Text2ImageDataset(filenames=self._filenames)
+        self._test_dataset = Text2ImageDataset(filenames=self._filenames)
+
+    @property
+    def train_dataset(self) -> Dataset:
+        return self._train_dataset
+
+    @property
+    def test_dataset(self) -> Dataset:
+        return self._test_dataset
+
+    def train_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self._train_dataset,
+            batch_size=self._batch_size,
+            shuffle=self._shuffle,
+            pin_memory=self._pin_memory,
+            num_workers=self._num_workers,
+            drop_last=True,  # Needed for batchnorm
+        )
+
+    def test_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self._test_dataset,
+            batch_size=self._batch_size,
+            shuffle=False,
+            pin_memory=self._pin_memory,
+            num_workers=self._num_workers,
+            drop_last=True,
+        )

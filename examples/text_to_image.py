@@ -8,8 +8,6 @@ import numpy as np
 import io
 
 
-
-
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Our sentences we like to encode
