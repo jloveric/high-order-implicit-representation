@@ -13,6 +13,8 @@ from torchvision import transforms
 from high_order_layers_torch.utils import positions_from_mesh
 import pandas as pd
 import io
+from sentence_transformers import SentenceTransformer
+
 
 logger = logging.getLogger(__name__)
 
@@ -355,6 +357,8 @@ class Text2ImageDataset(Dataset):
     def __init__(self, filenames: List[str], rotations: int = 1):
         super().__init__()
         self.dataset = PickAPic(files=filenames)
+        self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+
 
     def __len__(self):
         return int(1e12)
@@ -362,10 +366,12 @@ class Text2ImageDataset(Dataset):
     def gen_data(self) :
 
         caption, image = next(self.dataset())
+        caption_embedding = self.sentence_model.encode(caption)
+
         print('got here')
         flattened_image, flattened_position, image = simple_image_to_dataset(image)
         for index, rgb in enumerate(flattened_image):
-            yield caption, flattened_position[index], rgb
+            yield caption_embedding, flattened_position[index], rgb
 
     def __getitem__(self, idx):
         # I'm totally ignoring the index
