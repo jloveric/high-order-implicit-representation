@@ -6,7 +6,7 @@ from high_order_layers_torch.layers import *
 from high_order_layers_torch.networks import *
 from pytorch_lightning import Trainer
 import matplotlib.pyplot as plt
-from high_order_implicit_representation.networks import GenerativeNetwork
+from high_order_implicit_representation.networks import GenNet
 from pytorch_lightning.callbacks import LearningRateMonitor
 from high_order_implicit_representation.rendering import ImageGenerator
 from high_order_implicit_representation.single_image_dataset import (
@@ -44,7 +44,7 @@ def run_implicit_images(cfg: DictConfig):
             accelerator=cfg.accelerator,
             callbacks=[lr_monitor, image_generator],
         )
-        model = GenerativeNetwork(cfg)
+        model = GenNet(cfg)
         trainer.fit(model, datamodule=data_module)
         logger.info("testing")
 
