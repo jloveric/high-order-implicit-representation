@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-@hydra.main(config_path="../config", config_name="images_config")
+@hydra.main(config_path="../config", config_name="generative_config")
 def run_implicit_images(cfg: DictConfig):
 
     logger.info(OmegaConf.to_yaml(cfg))
@@ -30,7 +30,7 @@ def run_implicit_images(cfg: DictConfig):
     root_dir = hydra.utils.get_original_cwd()
 
     if cfg.train is True:
-        full_path = [f"{root_dir}/{path}" for path in cfg.images]
+        full_path = [f"{root_dir}/{path}" for path in cfg.files]
         data_module = Text2ImageDataModule(
             filenames=full_path, batch_size=cfg.batch_size, rotations=cfg.rotations
         )

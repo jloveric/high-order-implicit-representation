@@ -1,0 +1,35 @@
+files:
+  - "train-00000-of-00645-b66ac786bf6fb553.parquet"
+mlp:
+  layer_type: "polynomial"
+  n: 3
+  n_in: null
+  n_out: null
+  n_hidden: null
+  periodicity: null
+  rescale_output: False
+  scale: 2.0
+  input:
+    segments: 1
+    width: 2
+  output:
+    segments: 1
+    width: 3
+  hidden:
+    segments: 1
+    layers: 2
+    width: 10
+
+max_epochs: 50
+gpus: 1
+accelerator : cuda
+lr: 1e-3
+batch_size: 256
+
+# Are you training? Otherwise plot the result
+train: True
+checkpoint: null
+rotations: 1 # 1 is x,y, 2 is x,y, x-y, x+y, greater includes additional rotations
+
+defaults:
+  - optimizer: sparse_lion
