@@ -6,12 +6,12 @@ from high_order_layers_torch.layers import *
 from high_order_layers_torch.networks import *
 from pytorch_lightning import Trainer
 import matplotlib.pyplot as plt
-from high_order_implicit_representation.networks import Net
+from high_order_implicit_representation.networks import GenerativeNetwork
 from pytorch_lightning.callbacks import LearningRateMonitor
 from high_order_implicit_representation.rendering import ImageGenerator
 from high_order_implicit_representation.single_image_dataset import (
     image_to_dataset,
-    ImageDataModule,
+    Text2ImageDataModule
 )
 import logging
 
@@ -31,7 +31,7 @@ def run_implicit_images(cfg: DictConfig):
 
     if cfg.train is True:
         full_path = [f"{root_dir}/{path}" for path in cfg.images]
-        data_module = ImageDataModule(
+        data_module = Text2ImageDataModule(
             filenames=full_path, batch_size=cfg.batch_size, rotations=cfg.rotations
         )
         image_generator = ImageGenerator(
@@ -44,7 +44,7 @@ def run_implicit_images(cfg: DictConfig):
             accelerator=cfg.accelerator,
             callbacks=[lr_monitor, image_generator],
         )
-        model = Net(cfg)
+        model = GenerativeNetwork(cfg)
         trainer.fit(model, datamodule=data_module)
         logger.info("testing")
 
@@ -58,7 +58,7 @@ def run_implicit_images(cfg: DictConfig):
         checkpoint_path = f"{hydra.utils.get_original_cwd()}/{cfg.checkpoint}"
 
         logger.info(f"checkpoint_path {checkpoint_path}")
-        model = Net.load_from_checkpoint(checkpoint_path)
+        model = GenerativeNetwork.load_from_checkpoint(checkpoint_path)
 
         model.eval()
         image_dir = f"{hydra.utils.get_original_cwd()}/{cfg.images[0]}"
