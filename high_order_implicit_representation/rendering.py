@@ -11,12 +11,15 @@ from torch import nn
 from high_order_implicit_representation.single_image_dataset import (
     image_neighborhood_dataset,
     image_to_dataset,
+    Text2ImageDataset
 )
 import math
 import matplotlib.pyplot as plt
 import io
 import PIL
 from torchvision import transforms
+from torch.utils.data import DataLoader
+
 
 logger = logging.getLogger(__name__)
 default_size = [64, 64]
@@ -196,6 +199,66 @@ class ImageGenerator(Callback):
             y_hat_list = []
             batches = (len(self._inputs) + self._batch_size) // self._batch_size
             for batch in range(batches):
+                res = pl_module(
+                    self._inputs[
+                        batch * self._batch_size : (batch + 1) * self._batch_size
+                    ]
+                )
+                y_hat_list.append(res.detach().cpu())
+            y_hat = torch.cat(y_hat_list)
+
+            ans = y_hat.reshape(
+                self._image.shape[0], self._image.shape[1], self._image.shape[2]
+            )
+            ans = 0.5 * (ans + 1.0)
+
+            f, axarr = plt.subplots(1, 2)
+            axarr[0].imshow(ans.detach().cpu().numpy())
+            axarr[0].set_title("fit")
+            axarr[1].imshow(self._image.cpu())
+            axarr[1].set_title("original")
+
+            for i in range(2):
+                axarr[i].axes.get_xaxis().set_visible(False)
+                axarr[i].axes.get_yaxis().set_visible(False)
+
+            buf = io.BytesIO()
+            plt.savefig(
+                buf,
+                dpi="figure",
+                format=None,
+                metadata=None,
+                bbox_inches=None,
+                pad_inches=0.1,
+                facecolor="auto",
+                edgecolor="auto",
+                backend=None,
+            )
+            buf.seek(0)
+            image = PIL.Image.open(buf)
+            image = transforms.ToTensor()(image)
+
+            trainer.logger.experiment.add_image(
+                f"image", image, global_step=trainer.global_step
+            )
+
+class Text2ImageGenerator(Callback):
+    def __init__(self, filename, rotations, batch_size):
+        self._dataset = Text2ImageDataset(filename, rotations=rotations)
+        self._dataloader = DataLoader(self._dataset, batch_size=batch_size, shuffle=False)
+        self._batch_size = batch_size
+
+    @rank_zero_only
+    def on_train_epoch_end(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ) -> None:
+        pl_module.eval()
+        with torch.no_grad():
+            self._inputs = self._inputs.to(device=pl_module.device)
+
+            y_hat_list = []
+
+            for batch in self._dataloader:
                 res = pl_module(
                     self._inputs[
                         batch * self._batch_size : (batch + 1) * self._batch_size

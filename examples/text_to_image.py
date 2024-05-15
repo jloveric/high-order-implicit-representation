@@ -8,7 +8,7 @@ from pytorch_lightning import Trainer
 import matplotlib.pyplot as plt
 from high_order_implicit_representation.networks import GenNet
 from pytorch_lightning.callbacks import LearningRateMonitor
-from high_order_implicit_representation.rendering import ImageGenerator
+from high_order_implicit_representation.rendering import Text2ImageGenerator
 from high_order_implicit_representation.single_image_dataset import (
     image_to_dataset,
     Text2ImageDataModule
@@ -34,7 +34,7 @@ def run_implicit_images(cfg: DictConfig):
         data_module = Text2ImageDataModule(
             filenames=full_path, batch_size=cfg.batch_size, rotations=cfg.rotations
         )
-        image_generator = ImageGenerator(
+        image_generator = Text2ImageGenerator(
             filename=full_path[0], rotations=cfg.rotations, batch_size=cfg.batch_size
         )
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
@@ -58,7 +58,7 @@ def run_implicit_images(cfg: DictConfig):
         checkpoint_path = f"{hydra.utils.get_original_cwd()}/{cfg.checkpoint}"
 
         logger.info(f"checkpoint_path {checkpoint_path}")
-        model = GenerativeNetwork.load_from_checkpoint(checkpoint_path)
+        model = GenNet.load_from_checkpoint(checkpoint_path)
 
         model.eval()
         image_dir = f"{hydra.utils.get_original_cwd()}/{cfg.images[0]}"
