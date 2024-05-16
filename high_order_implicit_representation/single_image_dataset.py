@@ -380,6 +380,37 @@ class Text2ImageDataset(Dataset):
         return next(self.gen_data())
 
 
+class Text2ImageRenderDataset(Dataset):
+    """
+    This one is just used for drawing complete images, I want the entire
+    image returned as a flattened list, not just pixels
+    """
+    def __init__(self, filenames: List[str]):
+        super().__init__()
+        self.dataset = PickAPic(files=filenames)
+        self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+
+    def __len__(self):
+        return int(1e12)
+
+    def gen_data(self):
+
+        caption, image = next(self.dataset())
+        caption_embedding = self.sentence_model.encode(caption)
+
+        print("got here")
+        flattened_image, flattened_position, image = simple_image_to_dataset(image)
+        return caption_embedding, flattened_image, flattened_position
+        
+
+    def __getitem__(self, idx):
+        # I'm totally ignoring the index
+        # ans = self.dataset()
+        # print('ans', ans)
+
+        return next(self.gen_data())
+
+
 class Text2ImageDataModule(LightningDataModule):
     def __init__(self, filenames: List[str], num_workers, batch_size, pin_memory):
         super().__init__()

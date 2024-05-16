@@ -11,7 +11,7 @@ from torch import nn
 from high_order_implicit_representation.single_image_dataset import (
     image_neighborhood_dataset,
     image_to_dataset,
-    Text2ImageDataset
+    Text2ImageRenderDataset
 )
 import math
 import matplotlib.pyplot as plt
@@ -244,7 +244,7 @@ class ImageGenerator(Callback):
 
 class Text2ImageGenerator(Callback):
     def __init__(self, filename, rotations, batch_size):
-        self._dataset = Text2ImageDataset(filename, rotations=rotations)
+        self._dataset = Text2ImageRenderDataset(filename, rotations=rotations)
         self._dataloader = DataLoader(self._dataset, batch_size=batch_size, shuffle=False)
         self._batch_size = batch_size
 
@@ -258,12 +258,12 @@ class Text2ImageGenerator(Callback):
 
             y_hat_list = []
 
-            for batch in self._dataloader:
-                res = pl_module(
-                    self._inputs[
-                        batch * self._batch_size : (batch + 1) * self._batch_size
-                    ]
-                )
+            for caption_embedding, flattened_image, flattened_position in self._dataloader:
+                for index, rgb in enumerate(flattened_image):
+                    res = pl_module(
+                        caption_embedding, flattened_position[index], rgb
+                    )
+                    
                 y_hat_list.append(res.detach().cpu())
             y_hat = torch.cat(y_hat_list)
 
