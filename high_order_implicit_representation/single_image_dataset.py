@@ -408,7 +408,7 @@ class Text2ImageRenderDataset(Dataset):
         # ans = self.dataset()
         # print('ans', ans)
 
-        return next(self.gen_data())
+        return self.gen_data()
 
 
 class Text2ImageDataModule(LightningDataModule):

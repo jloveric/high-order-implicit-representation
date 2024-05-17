@@ -38,9 +38,7 @@ def test_image_neighborhood_reader():
 
 
 def test_parquet_dataset():
-    dataset = Text2ImageDataset(
-        filenames=["test_data/test.parquet"]
-    )
+    dataset = Text2ImageDataset(filenames=["test_data/test.parquet"])
     dataloader = DataLoader(dataset, batch_size=2, shuffle=False)
 
     # caption, position, rgb = next(iter(dataloader))
@@ -51,6 +49,14 @@ def test_parquet_dataset():
 
 
 def test_text_to_image_sampler_dataloader():
-    dataloader = Text2ImageRenderDataset(
-        filenames=["test_data/test.parquet"]
-    )
+    dataset = Text2ImageRenderDataset(filenames=["test_data/test.parquet"])
+
+    dataloader = DataLoader(dataset, batch_size=2, shuffle=False)
+
+    for element in dataloader:
+        print("element", element[0][0].shape)
+        print("element", element[0][1].shape)
+        print("element", element[1][0].shape)
+        assert element[0].shape[0] ==2
+        assert len(element) == 3
+        break
