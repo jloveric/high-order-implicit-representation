@@ -243,8 +243,8 @@ class ImageGenerator(Callback):
             )
 
 class Text2ImageSampler(Callback):
-    def __init__(self, filename, rotations, batch_size):
-        self._dataset = Text2ImageRenderDataset(filename, rotations=rotations)
+    def __init__(self, filename, batch_size):
+        self._dataset = Text2ImageRenderDataset(filename)
         self._dataloader = DataLoader(self._dataset, batch_size=batch_size, shuffle=False)
         self._batch_size = batch_size
 

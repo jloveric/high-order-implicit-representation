@@ -190,18 +190,15 @@ class GenNet(LightningModule):
         self.position_vector = ()
 
         self.model = GenerativeNetwork(
-            layer_type=cfg.mlp.layer_type,
-            n=cfg.mlp.n,
-            n_in=cfg.mlp.n_in,
-            n_hidden=cfg.mlp.n_in,
-            n_out=cfg.mlp.n_out,
-            in_width=cfg.mlp.input.width,
-            in_segments=cfg.mlp.input.segments,
-            out_width=cfg.mlp.output.width,
-            out_segments=cfg.mlp.output.segments,
-            hidden_width=cfg.mlp.hidden.width,
-            hidden_layers=cfg.mlp.hidden.layers,
-            hidden_segments=cfg.mlp.hidden.segments,
+            layer_type=cfg.layer_type,
+            embedding_size=cfg.embedding_size,
+            n=cfg.n,
+            input_size=cfg.input_size,
+            output_size=cfg.output_size,
+            mlp_width=cfg.mlp.width,
+            mlp_layers=cfg.mlp.layers,
+            input_segments=cfg.input_segments,
+            mlp_segments=cfg.mlp.segments,
             normalization=MaxAbsNormalization,  # torch.nn.LazyBatchNorm1d,
         )
 

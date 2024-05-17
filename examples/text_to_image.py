@@ -32,10 +32,10 @@ def run_implicit_images(cfg: DictConfig):
     if cfg.train is True:
         full_path = [f"{root_dir}/{path}" for path in cfg.files]
         data_module = Text2ImageDataModule(
-            filenames=full_path, batch_size=cfg.batch_size, rotations=cfg.rotations
+            filenames=full_path, batch_size=cfg.batch_size
         )
         image_generator = Text2ImageSampler(
-            filename=full_path[0], rotations=cfg.rotations, batch_size=cfg.batch_size
+            filename=full_path[0], batch_size=cfg.batch_size
         )
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
         trainer = Trainer(

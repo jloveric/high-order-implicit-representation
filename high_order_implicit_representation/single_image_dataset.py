@@ -412,7 +412,7 @@ class Text2ImageRenderDataset(Dataset):
 
 
 class Text2ImageDataModule(LightningDataModule):
-    def __init__(self, filenames: List[str], num_workers, batch_size, pin_memory):
+    def __init__(self, filenames: List[str], num_workers:int=10, batch_size:int=32, pin_memory:bool=False):
         super().__init__()
         self._filenames = filenames
         self._shuffle = False
