@@ -4,7 +4,6 @@ import torch
 from omegaconf import DictConfig
 from high_order_implicit_representation.networks import Net
 
-
 def test_generate_sample():
     sample_points = 10
     input_features = 70

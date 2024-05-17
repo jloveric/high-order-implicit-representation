@@ -3,11 +3,11 @@ from high_order_implicit_representation.single_image_dataset import (
     image_to_dataset,
     ImageNeighborhoodReader,
     image_neighborhood_dataset,
-    Text2ImageDataset
+    Text2ImageDataset,
+    Text2ImageRenderDataset,
 )
 import torch
 from torch.utils.data import Dataset, DataLoader
-
 
 
 def test_neighborhood_dataset():
@@ -36,12 +36,21 @@ def test_image_neighborhood_reader():
     assert ind.lasty == 27
     assert ind.image.shape == torch.Size([3, 32, 32])
 
+
 def test_parquet_dataset():
-    dataset = Text2ImageDataset(filenames = ["train-00000-of-00645-b66ac786bf6fb553.parquet"])
+    dataset = Text2ImageDataset(
+        filenames=["test_data/test.parquet"]
+    )
     dataloader = DataLoader(dataset, batch_size=2, shuffle=False)
-    
-    #caption, position, rgb = next(iter(dataloader))
-    for batch in dataloader :
-        print('batch', batch)
+
+    # caption, position, rgb = next(iter(dataloader))
+    for batch in dataloader:
+        print("batch", batch)
         break
-    #print('val', caption, position, rgb)
+    # print('val', caption, position, rgb)
+
+
+def test_text_to_image_sampler_dataloader():
+    dataloader = Text2ImageRenderDataset(
+        filenames=["test_data/test.parquet"]
+    )
