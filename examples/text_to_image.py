@@ -8,7 +8,7 @@ from pytorch_lightning import Trainer
 import matplotlib.pyplot as plt
 from high_order_implicit_representation.networks import GenNet
 from pytorch_lightning.callbacks import LearningRateMonitor
-from high_order_implicit_representation.rendering import Text2ImageGenerator
+from high_order_implicit_representation.rendering import Text2ImageSampler
 from high_order_implicit_representation.single_image_dataset import (
     image_to_dataset,
     Text2ImageDataModule
@@ -34,7 +34,7 @@ def run_implicit_images(cfg: DictConfig):
         data_module = Text2ImageDataModule(
             filenames=full_path, batch_size=cfg.batch_size, rotations=cfg.rotations
         )
-        image_generator = Text2ImageGenerator(
+        image_generator = Text2ImageSampler(
             filename=full_path[0], rotations=cfg.rotations, batch_size=cfg.batch_size
         )
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
@@ -42,7 +42,7 @@ def run_implicit_images(cfg: DictConfig):
             max_epochs=cfg.max_epochs,
             devices=cfg.gpus,
             accelerator=cfg.accelerator,
-            callbacks=[lr_monitor, image_generator],
+            callbacks=[lr_monitor],
         )
         model = GenNet(cfg)
         trainer.fit(model, datamodule=data_module)
