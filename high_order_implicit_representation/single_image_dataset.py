@@ -355,6 +355,7 @@ class Text2ImageDataset(Dataset):
         super().__init__()
         self.dataset = PickAPic(files=filenames)
         self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.generator = self.gen_data()
 
     def __len__(self):
         return int(1e6)
@@ -363,8 +364,8 @@ class Text2ImageDataset(Dataset):
 
         caption, image = next(self.dataset())
         caption_embedding = self.sentence_model.encode(caption)
-
         flattened_image, flattened_position, image = simple_image_to_dataset(image)
+
         for index, rgb in enumerate(flattened_image):
             yield caption_embedding, flattened_position[index], rgb
 
@@ -373,7 +374,7 @@ class Text2ImageDataset(Dataset):
         # ans = self.dataset()
         # print('ans', ans)
 
-        return next(self.gen_data())
+        return next(self.generator)
 
 
 class Text2ImageRenderDataset(Dataset):
