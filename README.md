@@ -72,7 +72,7 @@ Applying to random noise produces
 # Associative Dictionary
 This is an attempt to store more than one image in a network based on text embedding and associated image. In principle it could also be a generative model if you ask for something not in the dictionary, but we'll see what happens. I'm using the [Pick-a-Pic](https://stability.ai/research/pick-a-pic) so you'll need to download those parquet files - the idea here is not (yet) to train on an enormous dataset but maybe use 10s to 100s of images.
 ```
-python3 examples/text_to_image.py batch_size=2 optimizer=sparse_lion
+python3 examples/text_to_image.py batch_size=2000 optimizer=sparse_lion max_epochs=10
 ```
 
 # Random Interpolation (A Generative Model)

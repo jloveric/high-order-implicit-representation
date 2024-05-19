@@ -5,7 +5,7 @@ mlp:
   periodicity: null
   rescale_output: False
   scale: 2.0
-  width: 10
+  width: 100
   layers: 2
   segments: 2
 

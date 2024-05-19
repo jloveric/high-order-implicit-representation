@@ -390,10 +390,6 @@ class Text2ImageDataset(Dataset):
         self.count+=1
 
     def __getitem__(self, idx):
-        # I'm totally ignoring the index
-        # ans = self.dataset()
-        # print('ans', ans)
-
         return next(self.generator)
 
 
@@ -423,9 +419,6 @@ class Text2ImageRenderDataset(Dataset):
         
 
     def __getitem__(self, idx):
-        # I'm totally ignoring the index
-        # ans = self.dataset()
-        # print('ans', ans)
 
         return self.gen_data()
 
@@ -451,17 +444,6 @@ class Text2ImageDataModule(LightningDataModule):
     @property
     def test_dataset(self) -> Dataset:
         return self._test_dataset
-
-    def collate_fn_reset(self, dataset):
-        def collate(batch):
-            text = torch.vstack([row[0] for row in batch]) 
-            pos = torch.vstack([row[1] for row in batch])
-            rgb = torch.vstack([row[2] for row in batch])
-
-            #print('batch', batch)
-            return text, pos, rgb #torch.vstack(torch.from_numpy(batch[0])), torch.vstack(batch[1]), torch.vstack(batch[2])
-        dataset.reset()
-        return collate
 
     def train_dataloader(self) -> DataLoader:
         self._train_dataset.reset()
