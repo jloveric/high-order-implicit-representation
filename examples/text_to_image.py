@@ -7,7 +7,7 @@ from high_order_layers_torch.networks import *
 from pytorch_lightning import Trainer
 import matplotlib.pyplot as plt
 from high_order_implicit_representation.networks import GenNet
-from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from high_order_implicit_representation.rendering import Text2ImageSampler
 from high_order_implicit_representation.single_image_dataset import (
     image_to_dataset,
@@ -41,11 +41,15 @@ def run_implicit_images(cfg: DictConfig):
             filename=full_path[0], batch_size=cfg.batch_size
         )
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
+        checkpoint = ModelCheckpoint(
+            save_top_k=-1,  # Save all checkpoints
+            every_n_train_steps=50000  # Save checkpoint every 500 steps
+        )
         trainer = Trainer(
             max_epochs=cfg.max_epochs,
             devices=cfg.gpus,
             accelerator=cfg.accelerator,
-            callbacks=[lr_monitor],
+            callbacks=[lr_monitor, checkpoint],
         )
         model = GenNet(cfg)
         trainer.fit(model, datamodule=data_module)

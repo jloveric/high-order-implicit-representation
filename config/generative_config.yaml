@@ -1,5 +1,6 @@
 files:
-  - "train-00000-of-00645-b66ac786bf6fb553.parquet"
+  - test_data/test.parquet
+  #- "train-00000-of-00645-b66ac786bf6fb553.parquet"
 mlp:
   periodicity: null
   rescale_output: False

@@ -333,8 +333,9 @@ class ImageDataModule(LightningDataModule):
 class PickAPic:
     def __init__(self, files: list[str]):
         self.files = files
+        self._generator = self.data_generator()
 
-    def __call__(self):
+    def data_generator(self):
         for file in self.files:
             data = pd.read_parquet(file)
 
@@ -344,11 +345,14 @@ class PickAPic:
                 img = Image.open(io.BytesIO(jpg_0))
                 arr = np.copy(np.asarray(img))
                 yield caption, torch.from_numpy(arr)
+
                 jpg_1 = row["jpg_1"]
                 img = Image.open(io.BytesIO(jpg_1))
                 arr = np.copy(np.asarray(img))
                 yield caption, torch.from_numpy(arr)
 
+    def __call__(self):
+        return self._generator
 
 class Text2ImageDataset(Dataset):
     def __init__(self, filenames: List[str]):
@@ -356,18 +360,27 @@ class Text2ImageDataset(Dataset):
         self.dataset = PickAPic(files=filenames)
         self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
         self.generator = self.gen_data()
+        self._length = 0 #int(1e6)
+        self.count=0
 
     def __len__(self):
-        return int(1e6)
+        return self._length or int(1e12)
 
     def gen_data(self):
 
-        caption, image = next(self.dataset())
-        caption_embedding = self.sentence_model.encode(caption)
-        flattened_image, flattened_position, image = simple_image_to_dataset(image)
+        for batch in self.dataset():
+            print('batch', batch)
+            caption, image = batch
+            caption_embedding = self.sentence_model.encode(caption)
+            print('next image')
+            flattened_image, flattened_position, image = simple_image_to_dataset(image)
+            if self.count==0:
+                self._length += len(flattened_image)
 
-        for index, rgb in enumerate(flattened_image):
-            yield caption_embedding, flattened_position[index], rgb
+            for index, rgb in enumerate(flattened_image):
+                yield caption_embedding, flattened_position[index], rgb
+        
+        self.count+=1
 
     def __getitem__(self, idx):
         # I'm totally ignoring the index
