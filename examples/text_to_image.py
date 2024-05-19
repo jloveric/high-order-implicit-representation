@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-@hydra.main(config_path="../config", config_name="generative_config")
+@hydra.main(config_path="../config", config_name="generative_config", version_base="1.3")
 def run_implicit_images(cfg: DictConfig):
 
     logger.info(OmegaConf.to_yaml(cfg))

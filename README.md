@@ -11,6 +11,12 @@ and
 ```
 poetry add high-order-implicit-representation
 ```
+if you run into problems installing triton with poetry, this is a hack I've had to
+do for certain packages
+```
+poetry shell
+pip install triton
+```
 # Implicit Representation of Images
 
 Train a model
