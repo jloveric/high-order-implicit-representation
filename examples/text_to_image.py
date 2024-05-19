@@ -13,6 +13,7 @@ from high_order_implicit_representation.single_image_dataset import (
     image_to_dataset,
     Text2ImageDataModule
 )
+import torch
 import logging
 
 logging.basicConfig()
@@ -22,6 +23,8 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 @hydra.main(config_path="../config", config_name="generative_config", version_base="1.3")
 def run_implicit_images(cfg: DictConfig):
+
+    torch.multiprocessing.set_start_method('spawn')
 
     logger.info(OmegaConf.to_yaml(cfg))
     logger.info(f"Working directory {os.getcwd()}")

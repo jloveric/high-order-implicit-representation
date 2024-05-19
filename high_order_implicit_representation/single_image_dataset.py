@@ -339,17 +339,14 @@ class PickAPic:
             data = pd.read_parquet(file)
 
             for index, row in data.iterrows():
-                print("index", index)
                 caption = row["caption"]
-                print("caption", caption)
                 jpg_0 = row["jpg_0"]
                 img = Image.open(io.BytesIO(jpg_0))
-                arr = np.asarray(img)
+                arr = np.copy(np.asarray(img))
                 yield caption, torch.from_numpy(arr)
-                print("again")
                 jpg_1 = row["jpg_1"]
                 img = Image.open(io.BytesIO(jpg_1))
-                arr = np.asarray(img)
+                arr = np.copy(np.asarray(img))
                 yield caption, torch.from_numpy(arr)
 
 
@@ -360,14 +357,13 @@ class Text2ImageDataset(Dataset):
         self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
 
     def __len__(self):
-        return int(1e12)
+        return int(1e6)
 
     def gen_data(self):
 
         caption, image = next(self.dataset())
         caption_embedding = self.sentence_model.encode(caption)
 
-        print("got here")
         flattened_image, flattened_position, image = simple_image_to_dataset(image)
         for index, rgb in enumerate(flattened_image):
             yield caption_embedding, flattened_position[index], rgb
@@ -398,7 +394,6 @@ class Text2ImageRenderDataset(Dataset):
         caption, image = next(self.dataset())
         caption_embedding = self.sentence_model.encode(caption)
 
-        print("got here")
         flattened_image, flattened_position, image = simple_image_to_dataset(image)
         return caption_embedding, flattened_image, flattened_position
         
@@ -412,7 +407,7 @@ class Text2ImageRenderDataset(Dataset):
 
 
 class Text2ImageDataModule(LightningDataModule):
-    def __init__(self, filenames: List[str], num_workers:int=10, batch_size:int=32, pin_memory:bool=False):
+    def __init__(self, filenames: List[str], num_workers:int=0, batch_size:int=32, pin_memory:bool=False):
         super().__init__()
         self._filenames = filenames
         self._shuffle = False

@@ -206,13 +206,13 @@ class GenNet(LightningModule):
 
         self.loss = nn.MSELoss()
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, caption,x):
+        return self.model(caption,x)
 
     def eval_step(self, batch: Tensor, name: str):
-        x, y = batch
-        y_hat = self(x.flatten(1))
-        loss = self.loss(y_hat.flatten(), y.flatten())
+        caption, x, color = batch
+        y_hat = self(caption, x.flatten(1))
+        loss = self.loss(y_hat.flatten(), color.flatten())
 
         self.log(f"{name}_loss", loss, prog_bar=True)
         return loss
