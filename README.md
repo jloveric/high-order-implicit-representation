@@ -63,6 +63,11 @@ Applying to random noise produces
 
 ![Random Noise]()
 
+# Associative Dictionary
+This is an attempt to store more than one image in a network based on text embedding and associated image. In principle it could also be a generative model if you ask for something not in the dictionary, but we'll see what happens.
+```
+```
+
 # Random Interpolation (A Generative Model)
 This model picks random pixels and also the pixels locations relative to a target pixel as the training set.  The random pixels also have location information while the target pixel is always at (0,0) as all other pixels are measured relative.  The model learns to predict the
 pixel value from these random samples.
