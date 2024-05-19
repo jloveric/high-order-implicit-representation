@@ -335,6 +335,9 @@ class PickAPic:
         self.files = files
         self._generator = self.data_generator()
 
+    def reset(self) :
+        self._generator = self.data_generator()
+
     def data_generator(self):
         for file in self.files:
             data = pd.read_parquet(file)
@@ -352,7 +355,7 @@ class PickAPic:
                 yield caption, torch.from_numpy(arr)
 
     def __call__(self):
-        return self._generator
+        return self.data_generator()
 
 class Text2ImageDataset(Dataset):
     def __init__(self, filenames: List[str]):
@@ -366,13 +369,17 @@ class Text2ImageDataset(Dataset):
     def __len__(self):
         return self._length or int(1e12)
 
+    def reset(self) :
+        self.generator = self.gen_data()
+
     def gen_data(self):
 
         for batch in self.dataset():
-            print('batch', batch)
+            #print('batch', batch)
             caption, image = batch
             caption_embedding = self.sentence_model.encode(caption)
-            print('next image')
+            caption_embedding = torch.from_numpy(caption_embedding)
+            #print('next image')
             flattened_image, flattened_position, image = simple_image_to_dataset(image)
             if self.count==0:
                 self._length += len(flattened_image)
@@ -399,6 +406,9 @@ class Text2ImageRenderDataset(Dataset):
         super().__init__()
         self.dataset = PickAPic(files=filenames)
         self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+
+    def reset(self) :
+        self.dataset.reset()
 
     def __len__(self):
         return int(1e12)
@@ -442,7 +452,19 @@ class Text2ImageDataModule(LightningDataModule):
     def test_dataset(self) -> Dataset:
         return self._test_dataset
 
+    def collate_fn_reset(self, dataset):
+        def collate(batch):
+            text = torch.vstack([row[0] for row in batch]) 
+            pos = torch.vstack([row[1] for row in batch])
+            rgb = torch.vstack([row[2] for row in batch])
+
+            #print('batch', batch)
+            return text, pos, rgb #torch.vstack(torch.from_numpy(batch[0])), torch.vstack(batch[1]), torch.vstack(batch[2])
+        dataset.reset()
+        return collate
+
     def train_dataloader(self) -> DataLoader:
+        self._train_dataset.reset()
         return DataLoader(
             self._train_dataset,
             batch_size=self._batch_size,
@@ -450,9 +472,11 @@ class Text2ImageDataModule(LightningDataModule):
             pin_memory=self._pin_memory,
             num_workers=self._num_workers,
             drop_last=True,  # Needed for batchnorm
+            #collate_fn=self.collate_fn_reset(self._train_dataset)
         )
 
     def test_dataloader(self) -> DataLoader:
+        self._test_dataset.reset()
         return DataLoader(
             self._test_dataset,
             batch_size=self._batch_size,
@@ -460,4 +484,5 @@ class Text2ImageDataModule(LightningDataModule):
             pin_memory=self._pin_memory,
             num_workers=self._num_workers,
             drop_last=True,
+            #collate_fn=self.collate_fn_reset(self._test_dataset)
         )

@@ -210,6 +210,7 @@ class GenNet(LightningModule):
         return self.model(caption,x)
 
     def eval_step(self, batch: Tensor, name: str):
+        #print('batch', batch)
         caption, x, color = batch
         y_hat = self(caption, x.flatten(1))
         loss = self.loss(y_hat.flatten(), color.flatten())

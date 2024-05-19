@@ -50,6 +50,7 @@ def run_implicit_images(cfg: DictConfig):
             devices=cfg.gpus,
             accelerator=cfg.accelerator,
             callbacks=[lr_monitor, checkpoint],
+            reload_dataloaders_every_n_epochs=1
         )
         model = GenNet(cfg)
         trainer.fit(model, datamodule=data_module)
