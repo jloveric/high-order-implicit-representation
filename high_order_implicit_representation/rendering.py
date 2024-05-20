@@ -11,7 +11,7 @@ from torch import nn
 from high_order_implicit_representation.single_image_dataset import (
     image_neighborhood_dataset,
     image_to_dataset,
-    Text2ImageRenderDataset
+    Text2ImageRenderDataset,
 )
 import math
 import matplotlib.pyplot as plt
@@ -242,10 +242,13 @@ class ImageGenerator(Callback):
                 f"image", image, global_step=trainer.global_step
             )
 
+
 class Text2ImageSampler(Callback):
-    def __init__(self, filename, batch_size):
-        self._dataset = Text2ImageRenderDataset(filename)
-        self._dataloader = DataLoader(self._dataset, batch_size=batch_size, shuffle=False)
+    def __init__(self, filenames, batch_size):
+        self._dataset = Text2ImageRenderDataset(filenames)
+        self._dataloader = DataLoader(
+            self._dataset, batch_size=batch_size, shuffle=False
+        )
         self._batch_size = batch_size
 
     @rank_zero_only
@@ -254,50 +257,60 @@ class Text2ImageSampler(Callback):
     ) -> None:
         pl_module.eval()
         with torch.no_grad():
-            self._inputs = self._inputs.to(device=pl_module.device)
 
             y_hat_list = []
 
-            for caption_embedding, flattened_image, flattened_position in self._dataloader:
-                for index, rgb in enumerate(flattened_image):
+            image_count=0
+            for caption_embedding, flattened_position, image in self._dataloader:
+                size = len(flattened_position)
+                for i in range(0, size, self._batch_size):
+                    # embed = caption_embedding[i:(i+self._batch_size)]
+                    # rgb = flattened_image[i:(i+self._batch_size)]
+                    pos = flattened_position[i : (i + self._batch_size)]
+
+                for i in range(size//self._batch_size):
                     res = pl_module(
-                        caption_embedding, flattened_position[index], rgb
+                        caption_embedding,
+                        flattened_position[
+                            i * self._batch_size : (i + 1) * self._batch_size
+                        ],
                     )
-                    
-                y_hat_list.append(res.detach().cpu())
-            y_hat = torch.cat(y_hat_list)
 
-            ans = y_hat.reshape(
-                self._image.shape[0], self._image.shape[1], self._image.shape[2]
-            )
-            ans = 0.5 * (ans + 1.0)
+                    y_hat_list.append(res.detach().cpu())
 
-            f, axarr = plt.subplots(1, 2)
-            axarr[0].imshow(ans.detach().cpu().numpy())
-            axarr[0].set_title("fit")
-            axarr[1].imshow(self._image.cpu())
-            axarr[1].set_title("original")
+                y_hat = torch.vstack(y_hat_list)
 
-            for i in range(2):
-                axarr[i].axes.get_xaxis().set_visible(False)
-                axarr[i].axes.get_yaxis().set_visible(False)
+                ans = y_hat.reshape(
+                    self._image.shape[0], self._image.shape[1], self._image.shape[2]
+                )
+                ans = 0.5 * (ans + 1.0)
 
-            buf = io.BytesIO()
-            plt.savefig(
-                buf,
-                dpi="figure",
-                format=None,
-                metadata=None,
-                bbox_inches=None,
-                pad_inches=0.1,
-                facecolor="auto",
-                edgecolor="auto",
-                backend=None,
-            )
-            buf.seek(0)
-            image = PIL.Image.open(buf)
-            image = transforms.ToTensor()(image)
+                f, axarr = plt.subplots(1, 2)
+                axarr[0].imshow(ans.detach().cpu().numpy())
+                axarr[0].set_title("fit")
+                axarr[1].imshow(self._image.cpu())
+                axarr[1].set_title("original")
 
-            trainer.logger.experiment.add_image(
-                f"image", image, global_step=trainer.global_step
-            )
+                for i in range(2):
+                    axarr[i].axes.get_xaxis().set_visible(False)
+                    axarr[i].axes.get_yaxis().set_visible(False)
+
+                buf = io.BytesIO()
+                plt.savefig(
+                    buf,
+                    dpi="figure",
+                    format=None,
+                    metadata=None,
+                    bbox_inches=None,
+                    pad_inches=0.1,
+                    facecolor="auto",
+                    edgecolor="auto",
+                    backend=None,
+                )
+                buf.seek(0)
+                image = PIL.Image.open(buf)
+                image = transforms.ToTensor()(image)
+
+                trainer.logger.experiment.add_image(
+                    f"image_{image_count}", image, global_step=trainer.global_step
+                )

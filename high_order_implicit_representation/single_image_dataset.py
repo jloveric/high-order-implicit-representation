@@ -415,7 +415,7 @@ class Text2ImageRenderDataset(Dataset):
         caption_embedding = self.sentence_model.encode(caption)
 
         flattened_image, flattened_position, image = simple_image_to_dataset(image)
-        return caption_embedding, flattened_image, flattened_position
+        return caption_embedding, flattened_position, image
         
 
     def __getitem__(self, idx):

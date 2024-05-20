@@ -37,8 +37,8 @@ def run_implicit_images(cfg: DictConfig):
         data_module = Text2ImageDataModule(
             filenames=full_path, batch_size=cfg.batch_size
         )
-        image_generator = Text2ImageSampler(
-            filename=full_path[0], batch_size=cfg.batch_size
+        image_sampler = Text2ImageSampler(
+            filenames=[full_path[0]], batch_size=cfg.batch_size
         )
         lr_monitor = LearningRateMonitor(logging_interval="epoch")
         checkpoint = ModelCheckpoint(
@@ -49,7 +49,7 @@ def run_implicit_images(cfg: DictConfig):
             max_epochs=cfg.max_epochs,
             devices=cfg.gpus,
             accelerator=cfg.accelerator,
-            callbacks=[lr_monitor, checkpoint],
+            callbacks=[lr_monitor, checkpoint, image_sampler],
             reload_dataloaders_every_n_epochs=1
         )
         model = GenNet(cfg)
