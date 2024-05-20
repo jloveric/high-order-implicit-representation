@@ -291,7 +291,7 @@ class Text2ImageSampler(Callback):
                 f, axarr = plt.subplots(1, 2)
                 axarr[0].imshow(ans.detach().cpu().numpy())
                 axarr[0].set_title("fit")
-                axarr[1].imshow(self.image.cpu())
+                axarr[1].imshow(image.cpu())
                 axarr[1].set_title("original")
 
                 for i in range(2):
