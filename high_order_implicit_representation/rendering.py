@@ -255,16 +255,17 @@ class Text2ImageSampler(Callback):
     def on_train_epoch_end(
         self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> None:
+        self._dataset.reset()
         pl_module.eval()
         with torch.no_grad():
-            print("We are calling this")
             image_count=0
             for caption_embedding, flattened_position, image in self._dataloader:
+                image_count+=1
+                print('image_count', image_count)
                 flattened_position=flattened_position[0]
                 size = len(flattened_position)
                 y_hat_list = []
                 for i in range(0, size, self._batch_size):
-                    
 
                     embed_single = caption_embedding.to(pl_module.device)
                     
@@ -284,14 +285,15 @@ class Text2ImageSampler(Callback):
                     image.shape[1], image.shape[2], 3
                 )
 
-                print('ans.shape', ans.shape)
+                #ans = ans.permute(2,0,1)
+                ans = ans.squeeze(0)
                 
                 ans = 0.5 * (ans + 1.0)
 
                 f, axarr = plt.subplots(1, 2)
                 axarr[0].imshow(ans.detach().cpu().numpy())
                 axarr[0].set_title("fit")
-                axarr[1].imshow(image.cpu())
+                axarr[1].imshow(image.squeeze(0).cpu())
                 axarr[1].set_title("original")
 
                 for i in range(2):

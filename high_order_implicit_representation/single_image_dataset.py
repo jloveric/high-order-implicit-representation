@@ -402,25 +402,26 @@ class Text2ImageRenderDataset(Dataset):
         super().__init__()
         self.dataset = PickAPic(files=filenames)
         self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
-
+        self.reset()
+        
     def reset(self) :
-        self.dataset.reset()
+        self.generator = self.gen_data()
 
     def __len__(self):
         return int(1e12)
 
     def gen_data(self):
 
-        caption, image = next(self.dataset())
-        caption_embedding = self.sentence_model.encode(caption)
+        for caption, image in self.dataset():
+            caption_embedding = self.sentence_model.encode(caption)
 
-        flattened_image, flattened_position, image = simple_image_to_dataset(image)
-        return caption_embedding, flattened_position, image
+            flattened_image, flattened_position, image = simple_image_to_dataset(image)
+            yield caption_embedding, flattened_position, image
         
 
     def __getitem__(self, idx):
 
-        return self.gen_data()
+        return next(self.generator)
 
 
 class Text2ImageDataModule(LightningDataModule):

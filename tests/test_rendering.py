@@ -2,10 +2,11 @@ import pytest
 from high_order_implicit_representation.rendering import (
     neighborhood_sample_generator,
     NeighborGenerator,
+    Text2ImageSampler
 )
 import torch
 from omegaconf import DictConfig
-from high_order_implicit_representation.networks import Net
+from high_order_implicit_representation.networks import Net, GenNet
 from pytorch_lightning import Trainer
 
 
@@ -132,4 +133,53 @@ def test_neighbor_generator():
     generator = NeighborGenerator(
         samples=2, frames=2, output_size=[64, 64], width=3, outside=3
     )
+    generator.on_train_epoch_end(trainer=trainer, pl_module=model)
+
+
+def test_text2image_sampler() :
+    width = 3
+    outside = 3
+
+    input_features = ((width + 2 * outside) * (width + 2 * outside) - width * width) * 3
+    output_size = width * width * 3
+
+    cfg = DictConfig(
+        content={
+            "max_epochs": 1,
+            "gpus": 0,
+            "lr": 1e-4,
+            "batch_size": 16,
+            "segments": 2,
+            "optimizer": {
+                "name": "adam",
+                "lr": 1.0e-3,
+                "scheduler": "plateau",
+                "patience": 10,
+                "factor": 0.1,
+            },
+            "mlp": {
+                "layers": 2,
+                "segments": 2,
+                "scale": 2.0,
+                "width": 4,
+                "periodicity": None,
+                "rescale_output": False,
+            },
+            "embedding_size": 384,
+            "input_size": 2,
+            "output_size": 3,
+            "input_segments": 20,
+            "layer_type": "continuous",
+            "n": 3,
+        }
+    )
+
+    model = GenNet(cfg)
+    trainer = Trainer(
+        max_epochs=cfg.max_epochs,
+        accelerator='cpu',
+    )
+
+    # Just make sure this runs
+    generator = Text2ImageSampler(filenames=["test_data/test.parquet"], batch_size=2000)
     generator.on_train_epoch_end(trainer=trainer, pl_module=model)
