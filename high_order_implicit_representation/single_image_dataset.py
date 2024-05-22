@@ -349,10 +349,11 @@ class PickAPic:
                 arr = np.copy(np.asarray(img))
                 yield caption, torch.from_numpy(arr)
 
-                jpg_1 = row["jpg_1"]
-                img = Image.open(io.BytesIO(jpg_1))
-                arr = np.copy(np.asarray(img))
-                yield caption, torch.from_numpy(arr)
+                # I don't want the same caption twice
+                #jpg_1 = row["jpg_1"]
+                #img = Image.open(io.BytesIO(jpg_1))
+                #arr = np.copy(np.asarray(img))
+                #yield caption, torch.from_numpy(arr)
 
     def __call__(self):
         return self.data_generator()
